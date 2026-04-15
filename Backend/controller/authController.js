@@ -198,3 +198,36 @@ export const getMe = async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 };
+export const updateProfile = async(req,res)=>{
+  try{
+      const { fullName, email, password, role } = req.body;
+
+    const { error } = userValidationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res.status(404).json({ error: "user not found" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      fullName,
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    await user.save();
+
+
+    const savedUser = user.toObject();
+    delete savedUser.password;
+  }
+  catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+}
