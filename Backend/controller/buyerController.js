@@ -1,0 +1,48 @@
+import Listing from "../models/listingModel";
+import Order from "../models/orderModel";
+import Payment from "../models/paymentModel";
+
+export const getListings = async (req, res) => {
+  const listings = await Listing.find({ status: "active" });
+  res.json(listings);
+};
+
+export const createOrder = async (req, res) => {
+  try {
+    const { listingId } = req.body;
+
+    const listing = await Listing.findById(listingId);
+
+    const order = await Order.create({
+      listingId,
+      buyerId: req.user.id,
+      sellerId: listing.sellerId,
+      price: listing.price,
+      status: "pending",
+    });
+
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const initiatePayment = async (req, res) => {
+  try {
+    const { orderId, amount } = req.body;
+
+    const payment = await Payment.create({
+      orderId,
+      buyerId: req.user.id,
+      amount,
+      status: "held",
+      escrow: true,
+    });
+
+    await Order.findByIdAndUpdate(orderId, { status: "paid" });
+
+    res.json(payment);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
