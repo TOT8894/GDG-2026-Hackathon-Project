@@ -1,7 +1,7 @@
-const Listing = require("../models/listingModel");
-const Order = require("../models/orderModel");
+import Listing from "../models/listingModel";
+import Order from "../models/orderModel";
 
-exports.createListing = async (req, res) => {
+export const createListing = async (req, res) => {
   try {
     const listing = await Listing.create({
       ...req.body,
@@ -15,7 +15,7 @@ exports.createListing = async (req, res) => {
   }
 };
 
-exports.updateListing = async (req, res) => {
+export const updateListing = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     req.params.id,
     req.body,
@@ -24,12 +24,12 @@ exports.updateListing = async (req, res) => {
   res.json(listing);
 };
 
-exports.deleteListing = async (req, res) => {
+export const deleteListing = async (req, res) => {
   await Listing.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
 };
 
-exports.markAsSold = async (req, res) => {
+export const markAsSold = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     req.params.id,
     { status: "sold" },
@@ -38,7 +38,7 @@ exports.markAsSold = async (req, res) => {
   res.json(listing);
 };
 
-exports.getSellerOrders = async (req, res) => {
+export const getSellerOrders = async (req, res) => {
   const orders = await Order.find({ sellerId: req.user.id });
   res.json(orders);
 };

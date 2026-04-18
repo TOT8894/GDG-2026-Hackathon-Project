@@ -1,8 +1,8 @@
-const Listing = require("../models/listingModel");
-const Order = require("../models/orderModel");
-const User = require("../models/userModel");
+import Listing from "../models/listingModel";
+import Order from "../models/orderModel";
+import User from "../models/userModel";
 
-exports.getDashboard = async (req, res) => {
+export const getDashboard = async (req, res) => {
   try {
     const userId = req.user.id;
 

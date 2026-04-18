@@ -1,13 +1,13 @@
-const Listing = require("../models/listingModel");
-const Order = require("../models/orderModel");
-const Payment = require("../models/paymentModel");
+import Listing from "../models/listingModel";
+import Order from "../models/orderModel";
+import Payment from "../models/paymentModel";
 
-exports.getListings = async (req, res) => {
+export const getListings = async (req, res) => {
   const listings = await Listing.find({ status: "active" });
   res.json(listings);
 };
 
-exports.createOrder = async (req, res) => {
+export const createOrder = async (req, res) => {
   try {
     const { listingId } = req.body;
 
@@ -27,7 +27,7 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-exports.initiatePayment = async (req, res) => {
+export const initiatePayment = async (req, res) => {
   try {
     const { orderId, amount } = req.body;
 
