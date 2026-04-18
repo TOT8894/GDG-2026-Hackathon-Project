@@ -41,4 +41,8 @@ export const markAsSold = async (req, res) => {
 export const getSellerOrders = async (req, res) => {
   const orders = await Order.find({ sellerId: req.user.id });
   res.json(orders);
-};
+};exports
+exports
+exports
+exports
+exports
