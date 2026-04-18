@@ -1,0 +1,156 @@
+.app-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page-content {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-section {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0;
+}
+
+.page-panel {
+  width: 100%;
+  max-width: 980px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+}
+
+.hero-section {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 32px;
+  align-items: center;
+  padding: 32px 0;
+}
+
+.hero-copy {
+  text-align: left;
+}
+
+.hero-copy .eyebrow {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+
+.hero-copy h1 {
+  margin: 0 0 18px;
+  font-size: clamp(2.5rem, 4vw, 4rem);
+  line-height: 1.05;
+  color: var(--text-h);
+}
+
+.hero-copy .hero-text {
+  margin: 0;
+  max-width: 40rem;
+  line-height: 1.8;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.feature-card {
+  padding: 26px;
+  border-radius: 24px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.feature-card h3 {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+  color: var(--text-h);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.about-list {
+  margin: 20px 0 0;
+  padding-left: 1.35rem;
+  color: var(--text);
+}
+
+.about-list li {
+  margin-bottom: 0.85rem;
+}
+
+.site-footer {
+  width: 100%;
+  text-align: center;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.not-found .page-panel {
+  max-width: 640px;
+  text-align: center;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  background: var(--accent-bg);
+  color: var(--accent);
+  transition: background 0.2s, color 0.2s;
+}
+
+.button-link:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-content {
+    padding: 20px 16px 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-panel {
+    padding: 24px;
+  }
+}

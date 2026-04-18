@@ -50,12 +50,12 @@ Digital Kuralew is a backend service for a marketplace and chat system. The curr
 │   │   └── env.js
 │   ├── controller/
 │   │   ├── authController.js
-│   │   └── chatController.js
-|   |   ├── paymentController.js
+│   │   ├── chatController.js
+│   │   └── paymentController.js
 │   ├── middleware/
 │   │   ├── authentication.js
-│   │   └── autherization.js
-|   |   ├── errorHandler.middleware.js
+│   │   ├── autherization.js
+│   │   └── errorHandler.middleware.js
 │   ├── models/
 │   │   ├── userModel.js
 │   │   ├── refreshToken.js
@@ -111,9 +111,9 @@ npm install
 npm run dev
 ```
 
-The app will be available at:
+The backend API will be available at:
 
-```
+```bash
 https://gdg-2026-hackathon-project.onrender.com/api/v1
 ```
 
