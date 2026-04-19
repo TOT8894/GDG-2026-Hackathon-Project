@@ -39,34 +39,48 @@ Digital Kuralew is a backend service for a marketplace and chat system. The curr
 ## 📁 Project Structure
 
 ```
-
-├── Backend/
-│   ├── app.js
-│   ├── server.js
-│   ├── package.json
-│   ├── .env
-│   ├── config/
-│   │   ├── database.js
-│   │   └── env.js
-│   ├── controller/
-│   │   ├── authController.js
-│   │   └── chatController.js
-|   |   ├── paymentController.js
-│   ├── middleware/
-│   │   ├── authentication.js
-│   │   └── autherization.js
-|   |   ├── errorHandler.middleware.js
-│   ├── models/
-│   │   ├── userModel.js
-│   │   ├── refreshToken.js
-│   │   └── chatModel.js
-│   ├── routes/
-│   │   ├── authRoute.js
-│   │   └── chatRoute.js
-│   └── validation/
-│       ├── userValidation.js
-│       └── chatValidation.js
-└── README.md
+GDG-2026-Hackathon-Project/
+├── README.md
+└── Backend/
+  ├── app.js
+  ├── server.js
+  ├── package.json
+  ├── .gitignore
+  ├── config/
+  │   ├── database.js
+  │   └── env.js
+  ├── controller/
+  │   ├── adminController.js
+  │   ├── authController.js
+  │   ├── buyerController.js
+  │   ├── chatController.js
+  │   ├── dashboardController.js
+  │   ├── paymentController.js
+  │   └── sellerController.js
+  ├── middleware/
+  │   ├── authentication.js
+  │   ├── autherization.js
+  │   └── errorHandler.js
+  ├── models/
+  │   ├── chatModel.js
+  │   ├── entryModel.js
+  │   ├── listingModel.js
+  │   ├── paymentModel.js
+  │   ├── refreshToken.js
+  │   └── userModel.js
+  ├── routes/
+  │   ├── adminRoute.js
+  │   ├── authRoute.js
+  │   ├── buyerRoute.js
+  │   ├── chatRoute.js
+  │   ├── dashboardRoute.js
+  │   ├── paymentsRoute.js
+  │   └── sellerRoute.js
+  ├── utils/
+  │   └── error.util.js
+  ├── validation/
+  │   ├── chatValidation.js
+  │   └── userValidation.js
 ```
 
 ---
@@ -144,6 +158,40 @@ https://gdg-2026-hackathon-project.onrender.com/api/v1
 | PUT    | `/chat/:id/read`             | Mark message as read           | ✅            |
 | DELETE | `/chat/:id`                  | Delete a chat message          | ✅            |
 
+### Listing
+
+| Method | Endpoint                    | Description                     | Auth Required |
+| ------ | --------------------------- | ------------------------------- | ------------- |
+| GET    | `/buyer/listings`           | Get all active listings (buyer) | ✅            |
+| POST   | `/seller/listings`          | Create a new listing (seller)   | ✅            |
+| PUT    | `/seller/listings/:id`      | Update a listing (seller)       | ✅            |
+| DELETE | `/seller/listings/:id`      | Delete a listing (seller)       | ✅            |
+| PATCH  | `/seller/listings/:id/sold` | Mark listing as sold (seller)   | ✅            |
+| GET    | `/admin/listings`           | Get all listings (admin)        | ✅            |
+| POST   | `/admin/listings/approve`   | Approve listing (admin)         | ✅            |
+| POST   | `/admin/listings/reject`    | Reject listing (admin)          | ✅            |
+
+### Order
+
+| Method | Endpoint               | Description                        | Auth Required |
+| ------ | ---------------------- | ---------------------------------- | ------------- |
+| POST   | `/buyer/orders/create` | Create order for a listing (buyer) | ✅            |
+| GET    | `/seller/orders`       | Get seller's orders                | ✅            |
+
+### Entry (Wallet/Transaction)
+
+| Method            | Endpoint | Description | Auth Required |
+| ----------------- | -------- | ----------- | ------------- |
+| (not implemented) |          |             |               |
+
+### Admin
+
+| Method | Endpoint           | Description               | Auth Required |
+| ------ | ------------------ | ------------------------- | ------------- |
+| GET    | `/admin/users`     | Get all users             | ✅ (admin)    |
+| POST   | `/admin/users/ban` | Ban a user                | ✅ (admin)    |
+| GET    | `/admin/reports`   | Get reports (placeholder) | ✅ (admin)    |
+
 ### Payment
 
 | Method | Endpoint               | Description               | Auth Required |
@@ -155,8 +203,7 @@ https://gdg-2026-hackathon-project.onrender.com/api/v1
 
 ---
 
-## 📝 Request & Response Examples
----
+## 📝 Numbered Request & Response Examples
 
 ### 1. Register User
 
@@ -656,6 +703,189 @@ Authorization: Bearer <accessToken>
   }
 }
 ```
+
+### 18. Create Listing (Seller)
+
+**Request**
+
+```http
+POST /api/v1/seller/listings
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "title": "Item title",
+  "description": "Item description",
+  "price": 100,
+  "category": "electronics",
+  "images": ["url1", "url2"],
+  "location": { "latitude": 9.03, "longitude": 38.74, "address": "Addis Ababa" }
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "title": "Item title",
+  "description": "Item description",
+  "price": 100,
+  "category": "electronics",
+  "images": ["url1", "url2"],
+  "location": {
+    "latitude": 9.03,
+    "longitude": 38.74,
+    "address": "Addis Ababa"
+  },
+  "sellerId": "user_id",
+  "status": "pending",
+  "createdAt": "2026-04-19T10:00:00.000Z",
+  "updatedAt": "2026-04-19T10:00:00.000Z"
+}
+```
+
+### 19. Update Listing (Seller)
+
+**Request**
+
+```http
+PUT /api/v1/seller/listings/<listing_id>
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "price": 120
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  ...updated fields...
+}
+```
+
+### 20. Delete Listing (Seller)
+
+**Request**
+
+```http
+DELETE /api/v1/seller/listings/<listing_id>
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "message": "Deleted"
+}
+```
+
+### 21. Approve Listing (Admin)
+
+**Request**
+
+```http
+POST /api/v1/admin/listings/approve
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "listingId": "listing_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "status": "active"
+}
+```
+
+### 22. Create Order (Buyer)
+
+**Request**
+
+```http
+POST /api/v1/buyer/orders/create
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "listingId": "listing_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "order_id",
+  "listingId": "listing_id",
+  "buyerId": "user_id",
+  "sellerId": "seller_id",
+  "price": 100,
+  "status": "pending",
+  "createdAt": "2026-04-19T10:00:00.000Z"
+}
+```
+
+### 23. Get Seller Orders
+
+**Request**
+
+```http
+GET /api/v1/seller/orders
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+[
+  {
+    "_id": "order_id",
+    "listingId": "listing_id",
+    "buyerId": "user_id",
+    "sellerId": "seller_id",
+    "price": 100,
+    "status": "pending",
+    "createdAt": "2026-04-19T10:00:00.000Z"
+  }
+]
+```
+
+### 24. Ban User (Admin)
+
+**Request**
+
+```http
+POST /api/v1/admin/users/ban
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "userId": "user_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "user_id",
+  "isActive": false
+}
+```
+
+---
+
 ---
 
 ## 📊 Data Models
@@ -683,18 +913,59 @@ Authorization: Bearer <accessToken>
 - `createdAt`
 - `updatedAt`
 
-### Payment Model
+### Listing Model
+
+- `_id`
+- `title`
+- `description`
+- `price`
+- `currency`
+- `images` (array of strings)
+- `category`
+- `sellerId`
+- `location` (object: latitude, longitude, address)
+- `status` (`active`, `sold`, `pending`, `rejected`)
+- `isBoosted` (boolean)
+- `views` (number)
+- `likes` (number)
+- `createdAt`
+- `updatedAt`
+
+### Order Model
+
+- `_id`
+- `listingId`
+- `buyerId`
+- `sellerId`
+- `price`
+- `status` (`pending`, `paid`, `completed`, etc.)
+- `createdAt`
+- `updatedAt`
+
+### Entry Model (Wallet/Transaction)
 
 - `_id`
 - `userId`
+- `paymentId`
+- `amount`
+- `type` (`debit`, `credit`)
+- `description`
+- `balanceBefore`
+- `balanceAfter`
+- `createdAt`
+- `updatedAt`
+
+### Payment Model
+
+- `_id`
+- `senderId`
+- `receiverId`
 - `amount`
 - `currency`
 - `status` (`pending`, `processing`, `completed`, `failed`, `cancelled`)
 - `paymentMethod` (`card`, `bank_transfer`, `wallet`, `mobile_money`)
-- `transactionId`
 - `reference`
 - `description`
-- `metadata`
 - `failureReason`
 - `createdAt`
 - `updatedAt`
