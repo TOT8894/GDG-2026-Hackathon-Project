@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import errorHandler from "./middleware/errorHandler.middleware.js";
+import errorHandler from "./middleware/errorHandler.js";
 import dotenv from "dotenv";
 dotenv.config();
 import { CLIENT_URL } from "./config/env.js";

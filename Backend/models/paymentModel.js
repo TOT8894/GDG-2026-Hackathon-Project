@@ -2,7 +2,13 @@ import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema(
   {
-    userId: {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+    receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -15,7 +21,7 @@ const paymentSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: "USD",
+      default: "BIRR",
       uppercase: true
     },
     status: {
@@ -28,21 +34,12 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       enum: ["card", "bank_transfer", "wallet", "mobile_money"]
     },
-    transactionId: {
-      type: String,
-      unique: true,
-      sparse: true
-    },
     reference: {
       type: String,
       unique: true,
       required: true
     },
     description: String,
-    metadata: {
-      type: Map,
-      of: mongoose.Schema.Types.Mixed
-    },
     failureReason: String
   },
   {

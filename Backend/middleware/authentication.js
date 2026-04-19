@@ -17,7 +17,6 @@ export const authenticateAccessToken = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-
     req.user = user;
     next();
   } catch (err) {
