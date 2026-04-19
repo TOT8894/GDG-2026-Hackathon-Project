@@ -1,62 +1,115 @@
 import Payment from "../models/paymentModel.js";
+import User from "../models/userModel.js";
+import Entry from "../models/entryModel.js";
 import mongoose from "mongoose";
+import crypto from "crypto";
+import { errorGenerator } from "../utils/error.util.js";
 
-export const createPayment = async (req, res) => {
+// If requires usage of telebirr we will only create a payment and 
+// update the status to pending and validate if the users exist only
+// and then we will send a request to telebirr to complete the payment
+// and update the status to completed
+export const createPayment = async (req, res, next) => {
   const session = await mongoose.startSession();
 
   try {
+    // We start the transaction here and if anything wrong occurs we abort the transaction
     session.startTransaction();
 
-    const { amount, paymentMethod, description, reference, metadata } = req.body;
-    const userId = req.user.id;
+    const { amount, paymentMethod, description, receiverId } = req.body;
+    const senderId = req.user.id;
 
+    // Create a 30-second time window hash for duplicate prevention
+    const timeWindow = Math.floor(Date.now() / 30000);
+    const reference = crypto.createHash('sha256')
+      .update(`${senderId}-${receiverId}-${amount}-${timeWindow}`)
+      .digest('hex');
+
+    // Duplicate Prevention Check
     const existingPayment = await Payment.findOne({ reference }).session(session);
-
     if (existingPayment) {
       await session.abortTransaction();
-      return res.status(409).json({
-        success: false,
-        message: "Payment with this reference already exists"
+      return res.status(200).json({
+        success: true,
+        data: existingPayment,
+        message: "Payment already processed, wait for 30 seconds to try again"
       });
     }
 
-    const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    if (senderId === receiverId) {
+      throw errorGenerator("Cannot send money to yourself", 400);
+    }
 
+    // Validate Sender Balance
+    const sender = await User.findById(senderId).session(session);
+    if (!sender || sender.balance < amount) {
+      throw errorGenerator("Insufficient balance", 400);
+    }
+
+    const receiver = await User.findById(receiverId).session(session);
+    if (!receiver) {
+      throw errorGenerator("Receiver not found", 404);
+    }
+
+    // Create Transfer Record
     const payment = new Payment({
-      userId,
+      senderId,
+      receiverId,
       amount,
       paymentMethod,
       description,
       reference,
-      transactionId,
-      status: "pending",
-      metadata: metadata || {}
+      status: "completed"
+    });
+    
+    // Create Entry Objects (Leger)
+    const senderEntry = new Entry({
+      senderId,
+      paymentId: payment._id,
+      amount: -amount,
+      type: "debit",
+      description: `Transfer to ${receiverId}`,
+      balanceBefore: sender.balance,
+      balanceAfter: sender.balance - amount
     });
 
+    
+
+    const receiverEntry = new Entry({
+      senderId: receiverId,
+      paymentId: payment._id,
+      amount: amount,
+      type: "credit",
+      description: `Transfer from ${senderId}`,
+      balanceBefore: receiver.balance,
+      balanceAfter: receiver.balance + amount
+    });
+
+    
+
+    // Update Balances
+    sender.balance -= amount;
+    receiver.balance += amount;
+
+    // Save all documents
     await payment.save({ session });
+    await Entry.insertMany([senderEntry, receiverEntry], { session });
+    await sender.save({ session });
+    await receiver.save({ session });
 
     await session.commitTransaction();
 
     res.status(201).json({
       success: true,
-      data: payment
+      data: {
+        payment: payment,
+        senderEntry: senderEntry,
+        receiverEntry: receiverEntry
+      }
     });
   } catch (error) {
     await session.abortTransaction();
-
-    console.error("Payment creation error:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: "Duplicate reference detected"
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Payment processing failed"
-    });
+    next(error);
   } finally {
     session.endSession();
   }
@@ -65,9 +118,9 @@ export const createPayment = async (req, res) => {
 export const getPaymentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const senderId = req.user.id;
 
-    const payment = await Payment.findOne({ _id: id, userId });
+    const payment = await Payment.findOne({ _id: id, senderId });
 
     if (!payment) {
       return res.status(404).json({
@@ -91,10 +144,10 @@ export const getPaymentById = async (req, res) => {
 
 export const getUserPayments = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const senderId = req.user.id;
     const { status, page = 1, limit = 20 } = req.query;
 
-    const query = { userId };
+    const query = { senderId };
     if (status) query.status = status;
 
     const payments = await Payment.find(query)
@@ -123,61 +176,63 @@ export const getUserPayments = async (req, res) => {
   }
 };
 
-export const updatePaymentStatus = async (req, res) => {
-  const session = await mongoose.startSession();
+// For future features like integration with telebirr and other vendors
+// export const updatePaymentStatus = async (req, res) => {
+//   const session = await mongoose.startSession();
 
-  try {
-    session.startTransaction();
+//   try {
+//     session.startTransaction();
 
-    const { id } = req.params;
-    const { status, failureReason } = req.body;
-    const userId = req.user.id;
+//     const { id } = req.params;
+//     const { status, failureReason } = req.body;
+//     const senderId = req.user.id;
 
-    const payment = await Payment.findOne({ _id: id, userId }).session(session);
+//     const payment = await Payment.findOne({ _id: id, senderId }).session(session);
 
-    if (!payment) {
-      await session.abortTransaction();
-      return res.status(404).json({
-        success: false,
-        message: "Payment not found"
-      });
-    }
+//     if (!payment) {
+//       await session.abortTransaction();
+//       return res.status(404).json({
+//         success: false,
+//         message: "Payment not found"
+//       });
+//     }
 
-    const validTransitions = {
-      pending: ["processing", "cancelled"],
-      processing: ["completed", "failed", "cancelled"],
-      completed: [],
-      failed: ["pending"],
-      cancelled: ["pending"]
-    };
+//     const validTransitions = {
+//       pending: ["processing", "cancelled"],
+//       processing: ["completed", "failed", "cancelled"],
+//       completed: [],
+//       failed: ["pending"],
+//       cancelled: ["pending"]
+//     };
 
-    if (!validTransitions[payment.status].includes(status)) {
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: `Cannot transition from ${payment.status} to ${status}`
-      });
-    }
+//     if (!validTransitions[payment.status].includes(status)) {
+//       await session.abortTransaction();
+//       return res.status(400).json({
+//         success: false,
+//         message: `Cannot transition from ${payment.status} to ${status}`
+//       });
+//     }
 
-    payment.status = status;
-    if (failureReason) payment.failureReason = failureReason;
+//     payment.status = status;
+//     if (failureReason) payment.failureReason = failureReason;
 
-    await payment.save({ session });
+//     await payment.save({ session });
 
-    await session.commitTransaction();
+//     await session.commitTransaction();
 
-    res.json({
-      success: true,
-      data: payment
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    console.error("Update payment status error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update payment status"
-    });
-  } finally {
-    session.endSession();
-  }
-};
+//     res.json({
+//       success: true,
+//       data: payment
+//     });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     console.error("Update payment status error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to update payment status"
+//     });
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
