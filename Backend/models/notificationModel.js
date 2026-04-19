@@ -17,7 +17,6 @@ const notificationSchema = new mongoose.Schema(
       default: "system",
     },
 
-    // 🔥 Important for linking
     relatedId: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
