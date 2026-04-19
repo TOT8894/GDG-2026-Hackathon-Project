@@ -1,6 +1,7 @@
 import Listing from "../models/listingModel";
 import Order from "../models/orderModel";
 import Payment from "../models/paymentModel";
+import Notification from "../models/notificationModel.js"; 
 
 export const getListings = async (req, res) => {
   const listings = await Listing.find({ status: "active" });
@@ -19,6 +20,14 @@ export const createOrder = async (req, res) => {
       sellerId: listing.sellerId,
       price: listing.price,
       status: "pending",
+    });
+
+    await Notification.create({
+      userId: listing.sellerId,
+      title: "New Order",
+      message: "You received a new order",
+      type: "order",
+      relatedId: order._id,
     });
 
     res.status(201).json(order);
@@ -41,6 +50,13 @@ export const initiatePayment = async (req, res) => {
 
     await Order.findByIdAndUpdate(orderId, { status: "paid" });
 
+    await Notification.create({
+      userId: req.user._id,
+      title: "Payment Initiated",
+      message: "Your payment is being processed",
+      type: "payment",
+    });
+    
     res.json(payment);
   } catch (err) {
     res.status(500).json({ error: err.message });

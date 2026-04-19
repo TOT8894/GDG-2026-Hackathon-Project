@@ -1,5 +1,6 @@
 import ChatMessage from "../models/chatModel.js";
 import User from "../models/userModel.js";
+import Notification from "../models/notificationModel.js";
 import mongoose from "mongoose";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -42,8 +43,17 @@ export const sendMessage = async (req, res) => {
             videoUrl,
             imageUrl,
         });
-        console.log("Chat message created:", chat);
+
         const savedChat = await chat.save();
+
+        await Notification.create({
+            userId: receiverId,
+            title: "New Message",
+            message: message ? message : "You received a new message",
+            type: "chat",
+            isRead: false
+        });
+
         return res.status(201).json({ message: "Message sent successfully", data: savedChat });
     } catch (error) {
         return res.status(500).json({ error: error.message });
