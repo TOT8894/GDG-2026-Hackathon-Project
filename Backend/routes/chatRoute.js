@@ -10,14 +10,15 @@ import {
 } from "../controller/chatController.js";
 import { authenticateAccessToken } from "../middleware/authentication.js";
 
-const router = express.Router();
+const chatRoutes = express.Router();
 
-router.post("/", authenticateAccessToken, sendMessage);
-router.get("/", authenticateAccessToken, getMyChats);
-router.get("/conversation/:userId", authenticateAccessToken, getConversation);
-router.get("/:id", authenticateAccessToken, getChatById);
-router.put("/:id", authenticateAccessToken, updateMessage);
-router.delete("/:id", authenticateAccessToken, deleteMessage);
-router.put("/:id/read", authenticateAccessToken, markMessageRead);
 
-export default router;
+chatRoutes.post("/", authenticateAccessToken, sendMessage);
+chatRoutes.get("/", authenticateAccessToken, getMyChats);
+chatRoutes.get("/conversation/:userId", authenticateAccessToken, getConversation);
+chatRoutes.get("/:id", authenticateAccessToken, getChatById);
+chatRoutes.put("/:id", authenticateAccessToken, updateMessage);
+chatRoutes.delete("/:id", authenticateAccessToken, deleteMessage);
+chatRoutes.put("/:id/read", authenticateAccessToken, markMessageRead);
+
+export default chatRoutes;
