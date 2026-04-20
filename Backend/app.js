@@ -1,5 +1,5 @@
 import express from "express";
-import cors from "cors";
+// import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import errorHandler from "./middleware/errorHandler.js";
@@ -10,11 +10,14 @@ import authRoutes from "./routes/authRoute.js";
 import chatRoutes from "./routes/chatRoute.js";
 import paymentRoutes from "./routes/paymentsRoute.js";
 import notificationRoutes from "./routes/notificationRoute.js";
-
+import sellerRoutes from "./routes/sellerRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
+import buyerRoutes from "./routes/buyerRoute.js";
+import dashboardRoutes from "./routes/dashboardRoute.js";
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+// app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(helmet())
@@ -24,6 +27,11 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/seller", sellerRoutes);
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/buyer", buyerRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
+
 
 // Error handler
 app.use(errorHandler);
