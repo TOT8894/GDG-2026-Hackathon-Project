@@ -1,6 +1,6 @@
-import Listing from "../models/listingModel";
-import Order from "../models/orderModel";
-import User from "../models/userModel";
+import Listing from "../models/listingModel.js";
+import Order from "../models/orderModel.js";
+import User from "../models/userModel.js";
 
 export const getDashboard = async (req, res) => {
   try {

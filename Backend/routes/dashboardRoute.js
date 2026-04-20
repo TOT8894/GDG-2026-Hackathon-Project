@@ -1,8 +1,8 @@
 import express from "express";
 const router = express.Router();
-import { getDashboard } from "../controller/dashboardController";
-import auth from "../middleware/authentication";
+import { getDashboard } from "../controller/dashboardController.js";
+import authenticateAccessToken from "../middleware/authentication.js";
 
-router.get("/", auth, getDashboard);
+router.get("/", authenticateAccessToken, getDashboard);
 
 export default router;

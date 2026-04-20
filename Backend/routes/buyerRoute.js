@@ -1,10 +1,10 @@
 import express from "express";
 const router = express.Router();
-import buyer from "../controller/buyerController";
-import auth from "../middleware/authentication";
+import buyer from "../controller/buyerController.js";
+import authenticateAccessToken from "../middleware/authentication.js";
 
-router.get("/listings", auth, buyer.getListings);
-router.post("/orders/create", auth, buyer.createOrder);
-router.post("/payments/initiate", auth, buyer.initiatePayment);
+router.get("/listings", authenticateAccessToken, buyer.getListings);
+router.post("/orders/create", authenticateAccessToken, buyer.createOrder);
+router.post("/payments/initiate", authenticateAccessToken, buyer.initiatePayment);
 
 export default router;

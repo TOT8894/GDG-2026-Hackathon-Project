@@ -4,10 +4,9 @@ import {
   getPaymentById,
   getUserPayments,
 } from "../controller/paymentController.js";
-import { verifyToken } from "../middleware/authentication.js";
+import { authenticateAccessToken } from "../middleware/authentication.js";
 const paymentRoutes = express.Router();
-paymentRoutes.post("/", verifyToken, createPayment);
-paymentRoutes.get("/", verifyToken, getUserPayments);
-paymentRoutes.get("/:id", verifyToken, getPaymentById);
-// paymentRoutes.put("/:id/status", verifyToken, updatePaymentStatus); // will be used if needed
+paymentRoutes.post("/", authenticateAccessToken, createPayment);
+paymentRoutes.get("/", authenticateAccessToken, getUserPayments);
+paymentRoutes.get("/:id", authenticateAccessToken, getPaymentById);
 export default paymentRoutes;

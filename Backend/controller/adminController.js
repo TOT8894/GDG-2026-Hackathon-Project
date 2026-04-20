@@ -1,5 +1,5 @@
-import User from "../models/userModel";
-import  Listing from "../models/listingModel"
+import User from "../models/userModel.js";
+import  Listing from "../models/listingModel.js"
 
 export const getUsers = async (req, res) => {
   const users = await User.find();
