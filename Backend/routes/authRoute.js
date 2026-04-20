@@ -8,15 +8,15 @@ import {
   AccessRefreshToken,
  
 } from "../controller/authController.js";
-import { verifyToken } from "../middleware/authentication.js";
+import { authenticateAccessToken } from "../middleware/authentication.js";
 
 const authRoutes = express.Router();
 
 authRoutes.post("/login", login);
 authRoutes.post("/register", signup);
-authRoutes.post("/logout", verifyToken, logOut);
+authRoutes.post("/logout", authenticateAccessToken, logOut);
 authRoutes.post("/refresh", AccessRefreshToken);
-authRoutes.get("/profile", verifyToken, getMe);
-authRoutes.put("/updateProfile", verifyToken, updateProfile);
+authRoutes.get("/profile", authenticateAccessToken, getMe);
+authRoutes.put("/updateProfile", authenticateAccessToken, updateProfile);
 
 export default authRoutes;

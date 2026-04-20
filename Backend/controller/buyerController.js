@@ -1,6 +1,6 @@
-import Listing from "../models/listingModel";
-import Order from "../models/orderModel";
-import Payment from "../models/paymentModel";
+import Listing from "../models/listingModel.js";
+import Order from "../models/orderModel.js";
+import Payment from "../models/paymentModel.js";
 import Notification from "../models/notificationModel.js"; 
 
 export const getListings = async (req, res) => {

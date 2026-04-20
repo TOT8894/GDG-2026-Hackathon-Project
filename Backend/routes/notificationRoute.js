@@ -5,7 +5,7 @@ import {
   markAllAsRead,
   deleteNotification,
   getUnreadCount,
-} from "../controllers/notificationController.js";
+} from "../controller/notificationController.js";
 
 import { authenticateAccessToken } from "../middleware/authentication.js";
 
