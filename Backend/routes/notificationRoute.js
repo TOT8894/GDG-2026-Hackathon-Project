@@ -9,16 +9,16 @@ import {
 
 import { authenticateAccessToken } from "../middleware/authentication.js";
 
-const router = express.Router();
+const notificationRoutes = express.Router();
 
-router.use(authenticateAccessToken);
+notificationRoutes.use(authenticateAccessToken);
 
-router.get("/", getNotifications);
-router.get("/unread-count", getUnreadCount);
+notificationRoutes.get("/", getNotifications);
+notificationRoutes.get("/unread-count", getUnreadCount);
 
-router.post("/read", markAsRead);
-router.post("/read-all", markAllAsRead);
+notificationRoutes.post("/read", markAsRead);
+notificationRoutes.post("/read-all", markAllAsRead);
 
-router.delete("/:id", deleteNotification);
+notificationRoutes.delete("/:id", deleteNotification);
 
-export default router;
+export default notificationRoutes;
