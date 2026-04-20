@@ -1,16 +1,16 @@
 import express from "express";
-const router = express.Router();
+const adminRoutes = express.Router();
 import admin from "../controller/adminController.js";
 import authenticateAccessToken from "../middleware/authentication.js";
 import authorize from "../middleware/autherization.js";
 
-router.get("/users", authenticateAccessToken, authorize("admin"), admin.getUsers);
-router.post("/users/ban", authenticateAccessToken, authorize("admin"), admin.banUser);
+adminRoutes.get("/users", authenticateAccessToken, authorize("admin"), admin.getUsers);
+adminRoutes.post("/users/ban", authenticateAccessToken, authorize("admin"), admin.banUser);
 
-router.get("/listings", authenticateAccessToken, authorize("admin"), admin.getListings);
-router.post("/listings/approve", authenticateAccessToken, authorize("admin"), admin.approveListing);
-router.post("/listings/reject", authenticateAccessToken, authorize("admin"), admin.rejectListing);
+adminRoutes.get("/listings", authenticateAccessToken, authorize("admin"), admin.getListings);
+adminRoutes.post("/listings/approve", authenticateAccessToken, authorize("admin"), admin.approveListing);
+adminRoutes.post("/listings/reject", authenticateAccessToken, authorize("admin"), admin.rejectListing);
 
-router.get("/reports", authenticateAccessToken, authorize("admin"), admin.getReports);
+adminRoutes.get("/reports", authenticateAccessToken, authorize("admin"), admin.getReports);
 
-export default router;
+export default adminRoutes;
