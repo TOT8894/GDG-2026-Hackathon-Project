@@ -8,12 +8,12 @@ dotenv.config();
 import { CLIENT_URL } from "./config/env.js";
 import authRoutes from "./routes/authRoute.js";
 import chatRoutes from "./routes/chatRoute.js";
-// import paymentRoutes from "./routes/paymentsRoute.js";
-// import notificationRoutes from "./routes/notificationRoute.js";
-// import sellerRoutes from "./routes/sellerRoute.js";
-// import adminRoutes from "./routes/adminRoute.js";
-// import buyerRoutes from "./routes/buyerRoute.js";
-// import dashboardRoutes from "./routes/dashboardRoute.js";
+import paymentRoutes from "./routes/paymentsRoute.js";
+import notificationRoutes from "./routes/notificationRoute.js";
+import sellerRoutes from "./routes/sellerRoute.js";
+import adminRoutes from "./routes/adminRoute.js";
+import buyerRoutes from "./routes/buyerRoute.js";
+import dashboardRoutes from "./routes/dashboardRoute.js";
 const app = express();
 
 // Middlewares
@@ -25,12 +25,12 @@ app.use(helmet())
 // Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/chat", chatRoutes);
-// app.use("/api/v1/payments", paymentRoutes);
-// app.use("/api/v1/notifications", notificationRoutes);
-// app.use("/api/v1/seller", sellerRoutes);
-// app.use("/api/v1/admin", adminRoutes);
-// app.use("/api/v1/buyer", buyerRoutes);
-// app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/seller", sellerRoutes);
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/buyer", buyerRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 
 // Error handler
