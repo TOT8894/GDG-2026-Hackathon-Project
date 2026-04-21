@@ -17,7 +17,7 @@ import dashboardRoutes from "./routes/dashboardRoute.js";
 const app = express();
 
 // Middlewares
-app.use(cors({ origin:"*"}));
+app.use(cors({ origin: CLIENT_URL}));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(helmet())
