@@ -1,5 +1,5 @@
 import express from "express";
-// import cors from "cors";
+import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import errorHandler from "./middleware/errorHandler.js";
@@ -17,7 +17,7 @@ import dashboardRoutes from "./routes/dashboardRoute.js";
 const app = express();
 
 // Middlewares
-// app.use(cors({ origin: CLIENT_URL, credentials: true }));
+app.use(cors({ origin:"*"}));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(helmet())
