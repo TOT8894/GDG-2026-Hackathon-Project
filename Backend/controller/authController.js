@@ -1,19 +1,60 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-import userValidationSchema from "../validation/userValidation.js";
 import RefreshToken from "../models/refreshToken.js";
 import {
-  ACCESS_TOKEN_SECRET_KEY,
-  REFRESH_TOKEN_SECRET_KEY,
+  userUpdateValidationSchema,
+  userValidationSchema,
+} from "../validation/userValidation.js";
+import {
   ACCESS_TOKEN_EXPIRES_IN,
-  REFRESH_TOKEN_EXPIRES_IN
+  ACCESS_TOKEN_SECRET_KEY,
+  REFRESH_TOKEN_EXPIRES_IN,
+  REFRESH_TOKEN_SECRET_KEY,
 } from "../config/env.js";
+
+const sanitizeUser = (user) => ({
+  _id: user._id,
+  fullName: user.fullName,
+  email: user.email,
+  role: user.role,
+  isVerified: user.isVerified,
+  isActive: user.isActive,
+  avatar: user.avatar,
+  phone: user.phone,
+  location: user.location,
+  trustScore: user.trustScore,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
+const createAccessToken = (user) =>
+  jwt.sign({ id: user._id, role: user.role }, ACCESS_TOKEN_SECRET_KEY, {
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+  });
+
+const createRefreshToken = (user) =>
+  jwt.sign({ id: user._id }, REFRESH_TOKEN_SECRET_KEY, {
+    expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+  });
+
+const storeRefreshToken = async (userId, refreshToken) => {
+  const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 90);
+
+  await RefreshToken.findOneAndUpdate(
+    { userId },
+    { token: hashedRefreshToken, expiresAt },
+    { upsert: true, returnDocument: "after" }
+  );
+};
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ error: "email and password are required" });
     }
@@ -28,30 +69,16 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "invalid credentials" });
     }
 
-    const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
-      ACCESS_TOKEN_SECRET_KEY,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
+    const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user);
+    await storeRefreshToken(user._id, refreshToken);
 
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      REFRESH_TOKEN_SECRET_KEY,
-      { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-    );
-
-    const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90);
-
-    await RefreshToken.findOneAndUpdate(
-      { userId: user._id },
-      { token: hashedRefreshToken, expiresAt },
-      { upsert: true, new: true }
-    );
-
-    return res.status(200).json({ message: "logged in successfully", accessToken, refreshToken });
-
+    return res.status(200).json({
+      message: "Login successful",
+      data: sanitizeUser(user),
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -59,7 +86,7 @@ export const login = async (req, res) => {
 
 export const signup = async (req, res) => {
   try {
-    const { fullName, email, password, role } = req.body;
+    const { fullName, email, password, role, phone, avatar, location } = req.body;
 
     const { error } = userValidationSchema.validate(req.body);
     if (error) {
@@ -73,70 +100,47 @@ export const signup = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
+    const user = await User.create({
       fullName,
       email,
       password: hashedPassword,
       role,
+      phone: phone || "",
+      avatar: avatar || "",
+      location: location || undefined,
     });
 
-    await user.save();
-
-
-    const savedUser = user.toObject();
-    delete savedUser.password;
-
-    const accessToken = jwt.sign(
-      { id: savedUser._id, role: savedUser.role },
-      ACCESS_TOKEN_SECRET_KEY,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: savedUser._id },
-      REFRESH_TOKEN_SECRET_KEY,
-      { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
-    );
-
-    const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90);
-
-    await RefreshToken.findOneAndUpdate(
-      { userId: savedUser._id },
-      { token: hashedRefreshToken, expiresAt },
-      { upsert: true, new: true }
-    );
+    const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user);
+    await storeRefreshToken(user._id, refreshToken);
 
     return res.status(201).json({
-      message: "user created successfully",
-      data: savedUser,
+      message: "User registered successfully",
+      data: sanitizeUser(user),
       accessToken,
-      refreshToken
+      refreshToken,
     });
-
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
 };
 
-
 export const AccessRefreshToken = async (req, res) => {
   try {
-     const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization;
+    const refreshToken =
+      req.body?.refreshToken ||
+      (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null);
 
-    // ✅ Check header exists and format is correct
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!refreshToken) {
       return res.status(401).json({ error: "refresh token not found" });
     }
 
-    // ✅ Extract token
-    const refreshToken = authHeader.split(" ")[1];
     const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
 
     const refreshTokenDoc = await RefreshToken.findOne({
       token: hashedRefreshToken,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
 
     if (!refreshTokenDoc) {
@@ -148,14 +152,8 @@ export const AccessRefreshToken = async (req, res) => {
       return res.status(401).json({ error: "user not found" });
     }
 
-    const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
-      ACCESS_TOKEN_SECRET_KEY,
-      { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
-    );
-
+    const accessToken = createAccessToken(user);
     return res.status(200).json({ accessToken });
-
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
@@ -163,22 +161,8 @@ export const AccessRefreshToken = async (req, res) => {
 
 export const logOut = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-
-    // ✅ Check header exists and format is correct
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "refresh token not found" });
-    }
-
-    // ✅ Extract token
-    const refreshToken = authHeader.split(" ")[1];
-
-    const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-
-    await RefreshToken.deleteOne({ token: hashedRefreshToken });
-
+    await RefreshToken.deleteOne({ userId: req.user._id });
     return res.status(200).json({ message: "logged out successfully" });
-
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -193,41 +177,48 @@ export const getMe = async (req, res) => {
     }
 
     return res.status(200).json({ data: user });
-
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
 };
-export const updateProfile = async(req,res)=>{
-  try{
-      const { fullName, email, password, role } = req.body;
 
-    const { error } = userValidationSchema.validate(req.body);
+export const updateProfile = async (req, res) => {
+  try {
+    const { error } = userUpdateValidationSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (!existingUser) {
+    if (req.body.email) {
+      const existingUser = await User.findOne({
+        email: req.body.email,
+        _id: { $ne: req.user._id },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ error: "email already in use" });
+      }
+    }
+
+    const updates = { ...req.body };
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, {
+      returnDocument: "after",
+      runValidators: true,
+    }).select("-password");
+
+    if (!user) {
       return res.status(404).json({ error: "user not found" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      fullName,
-      email,
-      password: hashedPassword,
-      role,
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      data: user,
     });
-
-    await user.save();
-
-
-    const savedUser = user.toObject();
-    delete savedUser.password;
-  }
-  catch (error) {
+  } catch (error) {
     return res.status(400).json({ error: error.message });
   }
-}
+};

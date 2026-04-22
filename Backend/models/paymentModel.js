@@ -2,54 +2,67 @@ import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema(
   {
-    senderId: {
+    orderId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true
+      ref: "Order",
+      default: null,
     },
-    receiverId: {
+    buyerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true
+      index: true,
+    },
+    sellerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
     amount: {
       type: Number,
       required: true,
-      min: 0
+      min: 0,
     },
     currency: {
       type: String,
-      default: "BIRR",
-      uppercase: true
+      default: "ETB",
+      uppercase: true,
     },
     status: {
       type: String,
-      enum: ["pending", "processing", "completed", "failed", "cancelled"],
-      default: "pending"
+      enum: ["pending", "held", "released", "refunded"],
+      default: "pending",
     },
-    paymentMethod: {
+    method: {
       type: String,
       required: true,
-      enum: ["card", "bank_transfer", "wallet", "mobile_money"]
+      enum: ["wallet", "card", "bank"],
+    },
+    escrow: {
+      type: Boolean,
+      default: true,
+    },
+    transactionRef: {
+      type: String,
+      unique: true,
+      required: true,
     },
     reference: {
       type: String,
       unique: true,
-      required: true
+      required: true,
     },
-    description: String,
-    failureReason: String
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-paymentSchema.index({ userId: 1, createdAt: -1 });
+paymentSchema.index({ buyerId: 1, createdAt: -1 });
+paymentSchema.index({ sellerId: 1, createdAt: -1 });
+paymentSchema.index({ orderId: 1 });
 paymentSchema.index({ status: 1 });
-paymentSchema.index({ reference: 1 });
 
 const Payment = mongoose.model("Payment", paymentSchema);
 export default Payment;
