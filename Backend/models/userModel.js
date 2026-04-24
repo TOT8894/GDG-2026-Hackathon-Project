@@ -23,6 +23,38 @@ const userSchema = new mongoose.Schema(
       enum: ["buyer", "seller", "admin"],
       default: "buyer",
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    location: {
+      latitude: {
+        type: Number,
+        default: null,
+      },
+      longitude: {
+        type: Number,
+        default: null,
+      },
+    },
+    trustScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     balance: {
       type: Number,
       default: 0,
@@ -31,6 +63,8 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ role: 1 });
 
 const User = mongoose.model("User", userSchema);
 export default User;

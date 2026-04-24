@@ -19,7 +19,7 @@ export const updateListing = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     req.params.id,
     req.body,
-    { new: true }
+    { returnDocument: "after" }
   );
   res.json(listing);
 };
@@ -33,7 +33,7 @@ export const markAsSold = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     req.params.id,
     { status: "sold" },
-    { new: true }
+    { returnDocument: "after" }
   );
   res.json(listing);
 };
@@ -41,8 +41,12 @@ export const markAsSold = async (req, res) => {
 export const getSellerOrders = async (req, res) => {
   const orders = await Order.find({ sellerId: req.user.id });
   res.json(orders);
-};exports
-exports
-exports
-exports
-exports
+};
+
+export default {
+  createListing,
+  updateListing,
+  deleteListing,
+  markAsSold,
+  getSellerOrders,
+};

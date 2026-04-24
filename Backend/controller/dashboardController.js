@@ -22,7 +22,7 @@ export const getDashboard = async (req, res) => {
       totalListings,
       totalOrders,
       totalSales: totalSales[0]?.total || 0,
-      trustScore: user.trustScore,
+      trustScore: user?.trustScore || 0,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

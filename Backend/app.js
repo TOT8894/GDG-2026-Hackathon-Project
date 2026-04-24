@@ -14,6 +14,7 @@ import sellerRoutes from "./routes/sellerRoute.js";
 import adminRoutes from "./routes/adminRoute.js";
 import buyerRoutes from "./routes/buyerRoute.js";
 import dashboardRoutes from "./routes/dashboardRoute.js";
+import orderRoutes from "./routes/orderRoute.js";
 const app = express();
 
 // Middlewares
@@ -31,6 +32,7 @@ app.use("/api/v1/seller", sellerRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/buyer", buyerRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/orders", orderRoutes);
 
 
 // Error handler

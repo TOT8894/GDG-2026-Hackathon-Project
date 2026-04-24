@@ -12,7 +12,7 @@ export const banUser = async (req, res) => {
   const user = await User.findByIdAndUpdate(
     userId,
     { isActive: false },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   res.json(user);
@@ -29,7 +29,7 @@ export const approveListing = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     listingId,
     { status: "active" },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   res.json(listing);
@@ -41,7 +41,7 @@ export const rejectListing = async (req, res) => {
   const listing = await Listing.findByIdAndUpdate(
     listingId,
     { status: "rejected" },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   res.json(listing);
@@ -49,4 +49,13 @@ export const rejectListing = async (req, res) => {
 
 export const getReports = async (req, res) => {
   res.json({ message: "Reports system placeholder" });
+};
+
+export default {
+  getUsers,
+  banUser,
+  getListings,
+  approveListing,
+  rejectListing,
+  getReports,
 };

@@ -30,3 +30,5 @@ export const authenticateAccessToken = async (req, res, next) => {
     return res.status(401).json({ error: "invalid or expired token" });
   };
 };
+
+export default authenticateAccessToken;
