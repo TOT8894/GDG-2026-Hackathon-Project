@@ -17,22 +17,28 @@ A marketplace and chat backend for buyers, sellers, and admins built with **Node
 
 ---
 
-Dployed Link:
-https://gdg-2026-hackathon-project.onrender.com
+Deployed Link:
 
+Backend:  https://gdg-2026-hackathon-project.onrender.com <br>
+Frontned: https://gdg-2026-hackathon-project.vercel.app
 ---
 
 ## 🌟 Project Overview
 
-Digital Kuralew is a backend service for a marketplace and chat system. The current backend supports:
+Digital Kuralew is a full-stack marketplace and chat application. The backend provides:
 
 - JWT-based authentication with refresh tokens
-- User / Buyer / Seller / Admin roles
+- Buyer / Seller / Admin roles
 - User registration, login, profile, logout, and refresh token flow
 - Chat messaging with single-content messages: text, image, audio, or video
+- Listing management for sellers (create, update, delete, mark as sold)
+- Order creation and management for buyers and sellers
+- Payment processing and tracking
+- Notification system for real-time updates
+- Dashboard statistics for admins
 - MongoDB persistence via Mongoose
 
-> The codebase is implemented primarily in the `Backend/` folder.
+> The codebase is implemented in both `Backend/` and `Frontend/` folders.
 
 ---
 
@@ -41,46 +47,52 @@ Digital Kuralew is a backend service for a marketplace and chat system. The curr
 ```
 GDG-2026-Hackathon-Project/
 ├── README.md
-└── Backend/
-  ├── app.js
-  ├── server.js
-  ├── package.json
-  ├── .gitignore
-  ├── config/
-  │   ├── database.js
-  │   └── env.js
-  ├── controller/
-  │   ├── adminController.js
-  │   ├── authController.js
-  │   ├── buyerController.js
-  │   ├── chatController.js
-  │   ├── dashboardController.js
-  │   ├── paymentController.js
-  │   └── sellerController.js
-  ├── middleware/
-  │   ├── authentication.js
-  │   ├── autherization.js
-  │   └── errorHandler.js
-  ├── models/
-  │   ├── chatModel.js
-  │   ├── entryModel.js
-  │   ├── listingModel.js
-  │   ├── paymentModel.js
-  │   ├── refreshToken.js
-  │   └── userModel.js
-  ├── routes/
-  │   ├── adminRoute.js
-  │   ├── authRoute.js
-  │   ├── buyerRoute.js
-  │   ├── chatRoute.js
-  │   ├── dashboardRoute.js
-  │   ├── paymentsRoute.js
-  │   └── sellerRoute.js
-  ├── utils/
-  │   └── error.util.js
-  ├── validation/
-  │   ├── chatValidation.js
-  │   └── userValidation.js
+├── Backend/
+│   ├── app.js
+│   ├── server.js
+│   ├── package.json
+│   ├── .gitignore
+│   ├── config/
+│   │   ├── database.js
+│   │   └── env.js
+│   ├── controller/
+│   │   ├── adminController.js
+│   │   ├── authController.js
+│   │   ├── buyerController.js
+│   │   ├── chatController.js
+│   │   ├── dashboardController.js
+│   │   ├── notificationController.js
+│   │   ├── orderController.js
+│   │   ├── paymentController.js
+│   │   └── sellerController.js
+│   ├── middleware/
+│   │   ├── authentication.js
+│   │   ├── autherization.js
+│   │   └── errorHandler.js
+│   ├── models/
+│   │   ├── chatModel.js
+│   │   ├── entryModel.js
+│   │   ├── listingModel.js
+│   │   ├── notificationModel.js
+│   │   ├── orderModel.js
+│   │   ├── paymentModel.js
+│   │   ├── refreshToken.js
+│   │   └── userModel.js
+│   ├── routes/
+│   │   ├── adminRoute.js
+│   │   ├── authRoute.js
+│   │   ├── buyerRoute.js
+│   │   ├── chatRoute.js
+│   │   ├── dashboardRoute.js
+│   │   ├── notificationRoute.js
+│   │   ├── orderRoute.js
+│   │   ├── paymentsRoute.js
+│   │   └── sellerRoute.js
+│   ├── utils/
+│   │   └── error.util.js
+│   └── validation/
+│       ├── chatValidation.js
+│       └── userValidation.js
 ```
 
 ---
@@ -167,16 +179,32 @@ https://gdg-2026-hackathon-project.onrender.com/api/v1
 | PUT    | `/seller/listings/:id`      | Update a listing (seller)       | ✅            |
 | DELETE | `/seller/listings/:id`      | Delete a listing (seller)       | ✅            |
 | PATCH  | `/seller/listings/:id/sold` | Mark listing as sold (seller)   | ✅            |
-| GET    | `/admin/listings`           | Get all listings (admin)        | ✅            |
-| POST   | `/admin/listings/approve`   | Approve listing (admin)         | ✅            |
-| POST   | `/admin/listings/reject`    | Reject listing (admin)          | ✅            |
+| GET    | `/admin/listings`           | Get all listings (admin)        | ✅ (admin)    |
+| POST   | `/admin/listings/approve`   | Approve listing (admin)         | ✅ (admin)    |
+| POST   | `/admin/listings/reject`    | Reject listing (admin)          | ✅ (admin)    |
 
 ### Order
 
 | Method | Endpoint               | Description                        | Auth Required |
 | ------ | ---------------------- | ---------------------------------- | ------------- |
 | POST   | `/buyer/orders/create` | Create order for a listing (buyer) | ✅            |
-| GET    | `/seller/orders`       | Get seller's orders                | ✅            |
+| GET    | `/seller/orders`       | Get seller's orders (seller)       | ✅            |
+
+### Notification
+
+| Method | Endpoint                      | Description                    | Auth Required |
+| ------ | ----------------------------- | ------------------------------ | ------------- |
+| GET    | `/notifications`              | Get all notifications for user | ✅            |
+| GET    | `/notifications/unread-count` | Get unread notification count  | ✅            |
+| POST   | `/notifications/read`         | Mark notification as read      | ✅            |
+| POST   | `/notifications/read-all`     | Mark all notifications as read | ✅            |
+| DELETE | `/notifications/:id`          | Delete a notification          | ✅            |
+
+### Dashboard
+
+| Method | Endpoint     | Description              | Auth Required |
+| ------ | ------------ | ------------------------ | ------------- |
+| GET    | `/dashboard` | Get dashboard statistics | ✅            |
 
 ### Entry (Wallet/Transaction)
 
@@ -194,12 +222,14 @@ https://gdg-2026-hackathon-project.onrender.com/api/v1
 
 ### Payment
 
-| Method | Endpoint               | Description               | Auth Required |
-| ------ | ---------------------- | ------------------------- | ------------- |
-| POST   | `/payments`            | Create a new payment      | ✅            |
-| GET    | `/payments`            | Get all payments for user | ✅            |
-| GET    | `/payments/:id`        | Get payment by ID         | ✅            |
-| PUT    | `/payments/:id/status` | Update payment status     | ✅            |
+| Method | Endpoint                   | Description                 | Auth Required |
+| ------ | -------------------------- | --------------------------- | ------------- |
+| POST   | `/buyer/payments/initiate` | Initiate payment for order  | ✅            |
+| POST   | `/payments/confirm`        | Confirm payment (hold→held) | ✅            |
+| POST   | `/payments/release`        | Release payment to seller   | ✅            |
+| POST   | `/payments/refund`         | Refund payment              | ✅            |
+| GET    | `/payments`                | Get payment history         | ✅            |
+| GET    | `/payments/:id`            | Get payment by ID           | ✅            |
 
 ---
 
@@ -214,10 +244,11 @@ POST /api/v1/auth/register
 Content-Type: application/json
 
 {
-  "fullName": "John Doe",
-  "email": "john@example.com",
+  "fullName": "John Doqe",
+  "email": "johon1@example.com",
   "password": "securePassword123",
-  "role": "user"
+  "role": "admin",
+  "phone": "0987654321"
 }
 ```
 
@@ -225,15 +256,24 @@ Content-Type: application/json
 
 ```json
 {
-  "message": "user created successfully",
-  "data": {
-    "_id": "64fbe97a2c5b2f0012345678",
-    "fullName": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "createdAt": "2026-04-14T10:00:00.000Z",
-    "updatedAt": "2026-04-14T10:00:00.000Z"
-  },
+"message": "User registered successfully",
+    "data": {
+        "_id": "69eb19e7fe6fee759ca59a21",
+        "fullName": "John Doqe",
+        "email": "johon1@example.com",
+        "role": "admin",
+        "isVerified": false,
+        "isActive": true,
+        "avatar": "",
+        "phone": "0987654321",
+        "location": {
+            "latitude": null,
+            "longitude": null
+        },
+        "trustScore": 0,
+        "createdAt": "2026-04-24T07:21:11.120Z",
+        "updatedAt": "2026-04-24T07:21:11.120Z"
+    },
   "accessToken": "<JWT_ACCESS_TOKEN>",
   "refreshToken": "<JWT_REFRESH_TOKEN>"
 }
@@ -577,21 +617,19 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-### 14. Create Payment
+### 14. Initiate Payment (Buyer)
 
 **Request**
 
 ```http
-POST /api/v1/payments
+POST /api/v1/buyer/payments/initiate
 Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
-  "amount": 100.5,
-  "currency": "USD",
-  "paymentMethod": "card",
-  "description": "Order #1234",
-  "reference": "ORDER-1234-2026-04-18"
+  "orderId": "order_id",
+  "amount": 100,
+  "method": "card"
 }
 ```
 
@@ -599,17 +637,19 @@ Content-Type: application/json
 
 ```json
 {
-  "success": true,
+  "message": "Payment initiated",
   "data": {
-    "_id": "69e0f1a879e0181efcf01999",
-    "userId": "69dfd18979e0181efcf018c6",
-    "amount": 100.5,
-    "currency": "USD",
-    "paymentMethod": "card",
-    "description": "Order #1234",
-    "reference": "ORDER-1234-2026-04-18",
-    "transactionId": "TXN-1713436800000-abc123xyz",
-    "status": "pending",
+    "_id": "payment_id",
+    "orderId": "order_id",
+    "buyerId": "buyer_id",
+    "sellerId": "seller_id",
+    "amount": 100,
+    "currency": "ETB",
+    "status": "held",
+    "method": "card",
+    "escrow": true,
+    "transactionRef": "TXN-ABC123DEF456",
+    "reference": "TXN-ABC123DEF456",
     "createdAt": "2026-04-18T10:00:00.000Z",
     "updatedAt": "2026-04-18T10:00:00.000Z"
   }
@@ -618,7 +658,91 @@ Content-Type: application/json
 
 ---
 
-### 15. Get User Payments
+### 15. Confirm Payment
+
+**Request**
+
+```http
+POST /api/v1/payments/confirm
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "paymentId": "payment_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "message": "Payment confirmed",
+  "data": {
+    "_id": "payment_id",
+    "status": "held"
+  }
+}
+```
+
+---
+
+### 16. Release Payment (to Seller)
+
+**Request**
+
+```http
+POST /api/v1/payments/release
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "paymentId": "payment_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "message": "Funds released to seller",
+  "data": {
+    "_id": "payment_id",
+    "status": "released"
+  }
+}
+```
+
+---
+
+### 17. Refund Payment
+
+**Request**
+
+```http
+POST /api/v1/payments/refund
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "paymentId": "payment_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "message": "Payment refunded",
+  "data": {
+    "_id": "payment_id",
+    "status": "refunded"
+  }
+}
+```
+
+---
+
+### 18. Get Payment History
 
 **Request**
 
@@ -634,55 +758,36 @@ Authorization: Bearer <accessToken>
   "success": true,
   "data": [
     {
-      "_id": "69e0f1a879e0181efcf01999",
-      "amount": 100.5,
-      "currency": "USD",
-      "status": "pending",
-      "paymentMethod": "card",
-      "reference": "ORDER-1234-2026-04-18",
-      "transactionId": "TXN-1713436800000-abc123xyz",
+      "_id": "payment_id",
+      "orderId": "order_id",
+      "buyerId": "buyer_id",
+      "sellerId": "seller_id",
+      "amount": 100,
+      "currency": "ETB",
+      "status": "held",
+      "method": "card",
+      "escrow": true,
+      "transactionRef": "TXN-ABC123DEF456",
       "createdAt": "2026-04-18T10:00:00.000Z"
     }
-  ]
-}
-```
-
----
-
-### 16. Update Payment Status
-
-**Request**
-
-```http
-PUT /api/v1/payments/69e0f1a879e0181efcf01999/status
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "status": "completed"
-}
-```
-
-**Response**
-
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "69e0f1a879e0181efcf01999",
-    "status": "completed"
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "pages": 1
   }
 }
 ```
 
 ---
 
-### 17. Get Payment By ID
+### 19. Get Payment By ID
 
 **Request**
 
 ```http
-GET /api/v1/payments/69e0f1a879e0181efcf01999
+GET /api/v1/payments/payment_id
 Authorization: Bearer <accessToken>
 ```
 
@@ -692,19 +797,24 @@ Authorization: Bearer <accessToken>
 {
   "success": true,
   "data": {
-    "_id": "69e0f1a879e0181efcf01999",
-    "amount": 100.5,
-    "currency": "USD",
-    "status": "completed",
-    "paymentMethod": "card",
-    "reference": "ORDER-1234-2026-04-18",
-    "transactionId": "TXN-1713436800000-abc123xyz",
-    "createdAt": "2026-04-18T10:00:00.000Z"
+    "_id": "payment_id",
+    "orderId": "order_id",
+    "buyerId": "buyer_id",
+    "sellerId": "seller_id",
+    "amount": 100,
+    "currency": "ETB",
+    "status": "held",
+    "method": "card",
+    "escrow": true,
+    "transactionRef": "TXN-ABC123DEF456",
+    "reference": "TXN-ABC123DEF456",
+    "createdAt": "2026-04-18T10:00:00.000Z",
+    "updatedAt": "2026-04-18T10:00:00.000Z"
   }
 }
 ```
 
-### 18. Create Listing (Seller)
+### 20. Create Listing (Seller)
 
 **Request**
 
@@ -826,13 +936,17 @@ Content-Type: application/json
 
 ```json
 {
-  "_id": "order_id",
-  "listingId": "listing_id",
-  "buyerId": "user_id",
-  "sellerId": "seller_id",
-  "price": 100,
-  "status": "pending",
-  "createdAt": "2026-04-19T10:00:00.000Z"
+  "message": "Order created successfully",
+  "data": {
+    "_id": "order_id",
+    "listingId": "listing_id",
+    "buyerId": "user_id",
+    "sellerId": "seller_id",
+    "price": 100,
+    "status": "pending",
+    "createdAt": "2026-04-19T10:00:00.000Z",
+    "updatedAt": "2026-04-19T10:00:00.000Z"
+  }
 }
 ```
 
@@ -861,7 +975,381 @@ Authorization: Bearer <accessToken>
 ]
 ```
 
-### 24. Ban User (Admin)
+### 24. Get Active Listings (Buyer)
+
+**Request**
+
+```http
+GET /api/v1/buyer/listings
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+[
+  {
+    "_id": "listing_id",
+    "title": "Item title",
+    "description": "Item description",
+    "price": 100,
+    "currency": "ETB",
+    "images": [],
+    "category": "electronics",
+    "status": "active",
+    "location": {
+      "latitude": 9.03,
+      "longitude": 38.74,
+      "address": "Addis Ababa"
+    },
+    "sellerId": "seller_id",
+    "views": 0,
+    "likes": 0,
+    "createdAt": "2026-04-19T10:00:00.000Z"
+  }
+]
+```
+
+### 25. Create Listing (Seller)
+
+**Request**
+
+```http
+POST /api/v1/seller/listings
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "title": "Item title",
+  "description": "Item description",
+  "price": 100,
+  "category": "electronics",
+  "images": ["url1", "url2"],
+  "location": { "latitude": 9.03, "longitude": 38.74, "address": "Addis Ababa" }
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "title": "Item title",
+  "description": "Item description",
+  "price": 100,
+  "currency": "ETB",
+  "images": ["url1", "url2"],
+  "category": "electronics",
+  "location": {
+    "latitude": 9.03,
+    "longitude": 38.74,
+    "address": "Addis Ababa"
+  },
+  "sellerId": "user_id",
+  "status": "pending",
+  "isBoosted": false,
+  "views": 0,
+  "likes": 0,
+  "createdAt": "2026-04-19T10:00:00.000Z",
+  "updatedAt": "2026-04-19T10:00:00.000Z"
+}
+```
+
+### 26. Update Listing (Seller)
+
+**Request**
+
+```http
+PUT /api/v1/seller/listings/listing_id
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "price": 120
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "title": "Item title",
+  "description": "Item description",
+  "price": 120,
+  "currency": "ETB",
+  "images": ["url1", "url2"],
+  "category": "electronics",
+  "status": "pending",
+  "updatedAt": "2026-04-19T10:05:00.000Z"
+}
+```
+
+### 27. Delete Listing (Seller)
+
+**Request**
+
+```http
+DELETE /api/v1/seller/listings/listing_id
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "message": "Deleted"
+}
+```
+
+### 28. Mark Listing as Sold (Seller)
+
+**Request**
+
+```http
+PATCH /api/v1/seller/listings/listing_id/sold
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "status": "sold"
+}
+```
+
+### 29. Get All Listings (Admin)
+
+**Request**
+
+```http
+GET /api/v1/admin/listings
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+[
+  {
+    "_id": "listing_id",
+    "title": "Item title",
+    "description": "Item description",
+    "price": 100,
+    "status": "pending",
+    "sellerId": "seller_id",
+    "createdAt": "2026-04-19T10:00:00.000Z"
+  }
+]
+```
+
+### 30. Approve Listing (Admin)
+
+**Request**
+
+```http
+POST /api/v1/admin/listings/approve
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "listingId": "listing_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "status": "active"
+}
+```
+
+### 31. Reject Listing (Admin)
+
+**Request**
+
+```http
+POST /api/v1/admin/listings/reject
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "listingId": "listing_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "_id": "listing_id",
+  "status": "rejected"
+}
+```
+
+### 32. Get Dashboard
+
+**Request**
+
+```http
+GET /api/v1/dashboard
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "totalListings": 5,
+  "totalOrders": 10,
+  "totalSales": 500,
+  "trustScore": 95
+}
+```
+
+### 33. Get Notifications
+
+**Request**
+
+```http
+GET /api/v1/notifications
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "data": [
+    {
+      "_id": "notification_id",
+      "userId": "user_id",
+      "title": "New Order",
+      "message": "A new order was created for Item title",
+      "type": "order",
+      "relatedId": "order_id",
+      "isRead": false,
+      "createdAt": "2026-04-19T10:00:00.000Z",
+      "updatedAt": "2026-04-19T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 34. Get Unread Notification Count
+
+**Request**
+
+```http
+GET /api/v1/notifications/unread-count
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "unread": 1
+}
+```
+
+### 35. Mark Notification as Read
+
+**Request**
+
+```http
+POST /api/v1/notifications/read
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "notificationId": "notification_id"
+}
+```
+
+**Response**
+
+```json
+{
+  "message": "Marked as read",
+  "data": {
+    "_id": "notification_id",
+    "userId": "user_id",
+    "title": "New Order",
+    "message": "A new order was created for Item title",
+    "type": "order",
+    "relatedId": "order_id",
+    "isRead": true,
+    "createdAt": "2026-04-19T10:00:00.000Z",
+    "updatedAt": "2026-04-19T10:05:00.000Z"
+  }
+}
+```
+
+### 36. Mark All Notifications as Read
+
+**Request**
+
+```http
+POST /api/v1/notifications/read-all
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "message": "All notifications marked as read"
+}
+```
+
+### 37. Delete Notification
+
+**Request**
+
+```http
+DELETE /api/v1/notifications/notification_id
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+{
+  "message": "Notification deleted"
+}
+```
+
+### 38. Get All Users (Admin)
+
+**Request**
+
+```http
+GET /api/v1/admin/users
+Authorization: Bearer <accessToken>
+```
+
+**Response**
+
+```json
+[
+  {
+    "_id": "user_id",
+    "fullName": "John Doe",
+    "email": "john@example.com",
+    "role": "buyer",
+    "isActive": true,
+    "trustScore": 0,
+    "createdAt": "2026-04-14T10:00:00.000Z"
+  }
+]
+```
+
+### 39. Ban User (Admin)
 
 **Request**
 
@@ -896,19 +1384,26 @@ Content-Type: application/json
 - `fullName`
 - `email`
 - `password` (hashed)
-- `role` (`buyer`, `seller`, `admin`, `user`)
+- `role` (`buyer`, `seller`, `admin`)
+- `isVerified` (boolean)
+- `isActive` (boolean)
+- `avatar` (string)
+- `phone` (string)
+- `location` (object: latitude, longitude)
+- `trustScore` (number)
+- `balance` (number)
 - `createdAt`
 - `updatedAt`
 
 ### Chat Model
 
 - `_id`
-- `senderId`
-- `receiverId`
-- `message`
-- `audioUrl`
-- `videoUrl`
-- `imageUrl`
+- `senderId` (reference to User)
+- `receiverId` (reference to User)
+- `message` (string)
+- `audioUrl` (string)
+- `videoUrl` (string)
+- `imageUrl` (string)
 - `status` (`sent`, `delivered`, `seen`)
 - `createdAt`
 - `updatedAt`
@@ -919,10 +1414,10 @@ Content-Type: application/json
 - `title`
 - `description`
 - `price`
-- `currency`
+- `currency` (default: "ETB")
 - `images` (array of strings)
 - `category`
-- `sellerId`
+- `sellerId` (reference to User)
 - `location` (object: latitude, longitude, address)
 - `status` (`active`, `sold`, `pending`, `rejected`)
 - `isBoosted` (boolean)
@@ -934,19 +1429,20 @@ Content-Type: application/json
 ### Order Model
 
 - `_id`
-- `listingId`
-- `buyerId`
-- `sellerId`
+- `listingId` (reference to Listing)
+- `buyerId` (reference to User)
+- `sellerId` (reference to User)
 - `price`
-- `status` (`pending`, `paid`, `completed`, etc.)
+- `status` (`pending`, `paid`, `shipped`, `completed`, `cancelled`)
+- `paymentId` (reference to Payment)
 - `createdAt`
 - `updatedAt`
 
 ### Entry Model (Wallet/Transaction)
 
 - `_id`
-- `userId`
-- `paymentId`
+- `userId` (reference to User)
+- `paymentId` (reference to Payment)
 - `amount`
 - `type` (`debit`, `credit`)
 - `description`
@@ -958,24 +1454,37 @@ Content-Type: application/json
 ### Payment Model
 
 - `_id`
-- `senderId`
-- `receiverId`
+- `orderId` (reference to Order)
+- `buyerId` (reference to User)
+- `sellerId` (reference to User)
 - `amount`
-- `currency`
-- `status` (`pending`, `processing`, `completed`, `failed`, `cancelled`)
-- `paymentMethod` (`card`, `bank_transfer`, `wallet`, `mobile_money`)
+- `currency` (default: "ETB")
+- `status` (`pending`, `held`, `released`, `refunded`)
+- `method` (`wallet`, `card`, `bank`)
+- `escrow` (boolean)
+- `transactionRef`
 - `reference`
-- `description`
-- `failureReason`
 - `createdAt`
 - `updatedAt`
 
 ### Refresh Token Model
 
 - `_id`
-- `userId`
+- `userId` (reference to User)
 - `token`
 - `expiresAt`
 - `createdAt`
+
+### Notification Model
+
+- `_id`
+- `userId` (reference to User)
+- `title`
+- `message`
+- `type` (`order`, `chat`, `system`, `payment`)
+- `relatedId`
+- `isRead` (boolean)
+- `createdAt`
+- `updatedAt`
 
 ---
