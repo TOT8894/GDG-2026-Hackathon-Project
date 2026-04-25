@@ -1,6 +1,7 @@
+import {  Moon,  Sun } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
+
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../lib/api";
 
@@ -35,8 +36,35 @@ export default function LoginPage({ theme, setTheme }) {
     <div className="min-h-screen bg-gray-400 py-8 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <div className="mx-auto max-w-md px-4">
         <div className="rounded-3xl bg-white p-8 shadow-checkout dark:bg-gray-800">
-          <SiteHeader theme={theme} setTheme={setTheme} />
-          <h1 className="mt-6 text-xl font-semibold">Sign in</h1>
+      <div className="mb-4 flex items-center justify-between">
+      <button
+  onClick={() => navigate("/")}
+  className="mb-4 flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+>
+  ← Back
+</button>
+ <button
+        type="button"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ng-primary-500 focus-visible:ring-offset-2 active:scale-pressed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-600 dark:focus-visible:ring-offset-gray-800"
+        aria-label={
+          theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+        }
+        aria-pressed={theme === "dark"}
+      >
+        {theme === "dark" ? (
+          <Sun className="size-5" aria-hidden />
+        ) : (
+          <Moon className="size-5" aria-hidden />
+        )}
+      </button>
+</div>
+      <h2 className="text-center text-2xl font-bold text-ng-primary-600">
+  Kuralew Marketplace
+</h2>
+       
+
+<h1 className="mt-4 text-xl font-semibold">Sign in</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Use your account to pay and track orders.
           </p>
