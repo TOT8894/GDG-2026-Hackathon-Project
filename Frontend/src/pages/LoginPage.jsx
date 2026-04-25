@@ -101,6 +101,21 @@ export default function LoginPage({ theme, setTheme }) {
                 required
                 className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none ring-ng-primary-500 focus-visible:ring-2 dark:border-gray-600 dark:bg-gray-900"
               />
+              <div className="flex items-center justify-between text-sm">
+  <label className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      className="rounded border-gray-300"
+    />
+    Remember me 
+  </label>
+  <Link
+    to="/forgot-password"
+    className="font-medium text-ng-primary-600 hover:underline dark:text-ng-primary-400"
+  >
+    Forgot Password?
+  </Link>
+</div>
             </div>
             <button
               type="submit"

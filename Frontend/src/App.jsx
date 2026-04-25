@@ -10,6 +10,7 @@ import PaymentsPage from "./pages/PaymentsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ShopPage from "./pages/ShopPage";
 import TrackingPage from "./pages/TrackingPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 export default function App() {
   const [theme, setTheme] = useState(
@@ -76,6 +77,11 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+  path="/forgot-password"
+  element={<ForgotPasswordPage />}
+/>
     </Routes>
+    
   );
 }
