@@ -86,16 +86,15 @@ const listingSchema = new mongoose.Schema(
     },
   }
 );
-// Update `updatedAt` automatically before saving
-listingSchema.pre("save",  (next) => {
+// Update `updatedAt` automatically before saving.
+listingSchema.pre("save", function () {
   this.updatedAt = Date.now();
-  next();
 });
 
 listingSchema.index({ sellerId: 1 });
 listingSchema.index({ status: 1 });
 listingSchema.index({ price: 1 });
-listingSchema.index({ location: "2dsphere" });
+listingSchema.index({ "location.latitude": 1, "location.longitude": 1 });
 
 const Listing = mongoose.model("Listing", listingSchema);
 export default Listing;

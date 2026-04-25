@@ -19,4 +19,5 @@ authRoutes.post("/refresh", AccessRefreshToken);
 authRoutes.get("/profile", authenticateAccessToken, getMe);
 authRoutes.put("/updateProfile", authenticateAccessToken, updateProfile);
 
+
 export default authRoutes;

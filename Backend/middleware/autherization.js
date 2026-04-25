@@ -6,3 +6,5 @@ export const authorization = (...roles) => {
     next();
   };
 };
+
+export default authorization;

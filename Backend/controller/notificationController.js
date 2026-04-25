@@ -32,7 +32,7 @@ export const markAsRead = async (req, res) => {
     const updated = await Notification.findByIdAndUpdate(
       notificationId,
       { isRead: true },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     res.json({ message: "Marked as read", data: updated });
