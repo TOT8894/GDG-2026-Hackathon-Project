@@ -10,11 +10,8 @@ import PaymentsPage from "./pages/PaymentsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ShopPage from "./pages/ShopPage";
 import TrackingPage from "./pages/TrackingPage";
-<<<<<<< HEAD
 import ProductDetailPage from "./pages/ProductDetailPage";
-=======
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
->>>>>>> 32f5d4dea0fe537ce554e6e1c1939a1adaf9e250
 
 export default function App() {
   const [theme, setTheme] = useState(
