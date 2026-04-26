@@ -10,6 +10,7 @@ import PaymentsPage from "./pages/PaymentsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ShopPage from "./pages/ShopPage";
 import TrackingPage from "./pages/TrackingPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 
 export default function App() {
   const [theme, setTheme] = useState(
@@ -31,6 +32,8 @@ export default function App() {
         path="/shop"
         element={<ShopPage theme={theme} setTheme={setTheme} />}
       />
+      <Route path="/shop/:id" 
+      element={<ProductDetailPage />} />
       <Route
         path="/checkout"
         element={<CheckoutPage theme={theme} setTheme={setTheme} />}
@@ -64,6 +67,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <PaymentsPage theme={theme} setTheme={setTheme} />
+          </ProtectedRoute>
+        }
+      />
+        <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <OrdersPage theme={theme} setTheme={setTheme} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="products/:id"
+        element={
+          <ProtectedRoute>
+            <OrderDetailPage theme={theme} setTheme={setTheme} />
           </ProtectedRoute>
         }
       />
