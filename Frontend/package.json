@@ -12,12 +12,8 @@
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-<<<<<<< HEAD
-    "react-router-dom": "^6.30.3"
-=======
     "react-icons": "^5.6.0",
-    "react-router-dom": "^6.28.0"
->>>>>>> 32f5d4dea0fe537ce554e6e1c1939a1adaf9e250
+    "react-router-dom": "^7.14.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.3",
