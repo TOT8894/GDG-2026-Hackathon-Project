@@ -5,7 +5,7 @@ import {
   getUserOrders,
   updateOrderStatus,
 } from "../controller/orderController.js";
-import authenticateAccessToken from "../middleware/authentication.js";
+import { authenticateAccessToken } from "../middleware/authentication.js";
 
 const orderRoutes = express.Router();
 

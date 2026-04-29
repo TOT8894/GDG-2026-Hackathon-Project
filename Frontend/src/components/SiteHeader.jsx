@@ -1,8 +1,9 @@
-import { LogOut, Moon, ShoppingBag, Sun } from "lucide-react";
+import { LogOut, Moon, ShoppingBag, Sun, User, MessageCircle, ShoppingCart, LayoutDashboard } from "lucide-react";
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import NotificationBell from "./NotificationBell";
 
 const BRAND_NAME = "Kuralew";
 
@@ -16,10 +17,10 @@ const navClass = ({ isActive }) =>
 
 export default function SiteHeader({ theme, setTheme }) {
   const { user, isAuthenticated, logout } = useAuth();
-  const { cart } = useCart();
+  const { cart, itemCount } = useCart();
   const cartCount = useMemo(
-    () => cart.reduce((n, line) => n + line.quantity, 0),
-    [cart],
+    () => itemCount || 0,
+    [itemCount],
   );
 
   return (
@@ -46,16 +47,24 @@ export default function SiteHeader({ theme, setTheme }) {
           <NavLink to="/" className={navClass} end>
             Home
           </NavLink>
+          <NavLink to="/marketplace" className={navClass}>
+            <LayoutDashboard className="inline size-4 mr-1" aria-hidden /> Marketplace
+          </NavLink>
           <NavLink to="/shop" className={navClass}>
             Shop
           </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/cart" className={navClass}>
+              <ShoppingCart className="inline size-4 mr-1" aria-hidden /> Cart
+              {cartCount > 0 ? (
+                <span className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-ng-accent-500 px-1.5 text-xs font-semibold text-white tabular-nums">
+                  {cartCount}
+                </span>
+              ) : null}
+            </NavLink>
+          )}
           <NavLink to="/checkout" className={navClass}>
             Checkout
-            {cartCount > 0 ? (
-              <span className="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-ng-accent-500 px-1.5 text-xs font-semibold text-white tabular-nums">
-                {cartCount}
-              </span>
-            ) : null}
           </NavLink>
           <NavLink to="/orders" className={navClass}>
             Orders
@@ -64,16 +73,34 @@ export default function SiteHeader({ theme, setTheme }) {
             Payments
           </NavLink>
           {isAuthenticated ? (
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-            >
-              <LogOut className="size-4" aria-hidden />
-              <span className="max-w-[8rem] truncate sm:max-w-[12rem]">
-                {user?.email ? `Out (${user.email})` : "Log out"}
-              </span>
-            </button>
+            <>
+              <NavLink to="/chat" className={navClass}>
+                <MessageCircle className="inline size-4" aria-hidden /> Chat
+              </NavLink>
+              {user?.role === 'seller' && (
+                <NavLink to="/seller-dashboard" className={navClass}>
+                  <LayoutDashboard className="inline size-4" aria-hidden /> Dashboard
+                </NavLink>
+              )}
+              {user?.role === 'admin' && (
+                <NavLink to="/admin" className={navClass}>
+                  <LayoutDashboard className="inline size-4" aria-hidden /> Admin
+                </NavLink>
+              )}
+              <NavLink to="/profile" className={navClass}>
+                <User className="inline size-4" aria-hidden /> Profile
+              </NavLink>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              >
+                <LogOut className="size-4" aria-hidden />
+                <span className="max-w-[8rem] truncate sm:max-w-[12rem]">
+                  {user?.email ? `Out (${user.email})` : "Log out"}
+                </span>
+              </button>
+            </>
           ) : (
             <>
               <NavLink to="/login" className={navClass}>
@@ -86,21 +113,24 @@ export default function SiteHeader({ theme, setTheme }) {
           )}
         </nav>
       </div>
-      <button
-        type="button"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ng-primary-500 focus-visible:ring-offset-2 active:scale-pressed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-600 dark:focus-visible:ring-offset-gray-800"
-        aria-label={
-          theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-        }
-        aria-pressed={theme === "dark"}
-      >
-        {theme === "dark" ? (
-          <Sun className="size-5" aria-hidden />
-        ) : (
-          <Moon className="size-5" aria-hidden />
-        )}
-      </button>
+      <div className="flex items-center gap-2">
+        {isAuthenticated && <NotificationBell />}
+        <button
+          type="button"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ng-primary-500 focus-visible:ring-offset-2 active:scale-pressed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-600 dark:focus-visible:ring-offset-gray-800"
+          aria-label={
+            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+          }
+          aria-pressed={theme === "dark"}
+        >
+          {theme === "dark" ? (
+            <Sun className="size-5" aria-hidden />
+          ) : (
+            <Moon className="size-5" aria-hidden />
+          )}
+        </button>
+      </div>
     </header>
   );
 }

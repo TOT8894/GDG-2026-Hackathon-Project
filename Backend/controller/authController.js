@@ -3,6 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import RefreshToken from "../models/refreshToken.js";
+import { sendPasswordResetEmail, sendEmailVerification } from "../utils/emailService.js";
 import {
   userUpdateValidationSchema,
   userValidationSchema,
@@ -13,6 +14,22 @@ import {
   REFRESH_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_SECRET_KEY,
 } from "../config/env.js";
+import multer from "multer";
+import path from "path";
+
+// Multer storage configuration
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"), false);
+    }
+  },
+});
 
 const sanitizeUser = (user) => ({
   _id: user._id,
@@ -20,6 +37,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   role: user.role,
   isVerified: user.isVerified,
+  isEmailVerified: user.isEmailVerified,
   isActive: user.isActive,
   avatar: user.avatar,
   phone: user.phone,
@@ -79,6 +97,7 @@ export const login = async (req, res) => {
       accessToken,
       refreshToken,
     });
+    console.log(user);
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
@@ -110,15 +129,38 @@ export const signup = async (req, res) => {
       location: location || undefined,
     });
 
+    // Send email verification
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+    user.emailVerificationToken = hashedVerificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 86400000); // 24 hours
+    await user.save();
+
+    try {
+      await sendEmailVerification(user.email, verificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+    }
+
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
     await storeRefreshToken(user._id, refreshToken);
 
+    // Return verification token in development mode for testing
+    const devVerificationUrl = process.env.NODE_ENV === "development" 
+      ? `${process.env.CLIENT_URL}/verify-email/${verificationToken}`
+      : undefined;
+
     return res.status(201).json({
-      message: "User registered successfully",
+      message: "User registered successfully. Please check your email to verify your account.",
       data: sanitizeUser(user),
       accessToken,
       refreshToken,
+      // For testing in development
+      ...(process.env.NODE_ENV === "development" && { 
+        verificationToken,
+        verificationUrl: devVerificationUrl 
+      }),
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -201,8 +243,17 @@ export const updateProfile = async (req, res) => {
     }
 
     const updates = { ...req.body };
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
+    // Don't allow password update through this endpoint
+    delete updates.password;
+
+    // Role validation: only admins can become admin or promote others to admin
+    if (updates.role && updates.role === "admin" && req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admins can assign admin role" });
+    }
+
+    // Non-admins can only switch between buyer and seller
+    if (updates.role && req.user.role !== "admin" && !["buyer", "seller"].includes(updates.role)) {
+      return res.status(403).json({ error: "You can only switch between buyer and seller roles" });
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
@@ -220,5 +271,222 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "current password and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "new password must be at least 8 characters" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "user not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "current password is incorrect" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    // Invalidate all refresh tokens for security
+    await RefreshToken.deleteMany({ userId: user._id });
+
+    return res.status(200).json({
+      message: "Password changed successfully. Please login again.",
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    // Don't reveal if user exists for security
+    if (!user) {
+      return res.status(200).json({
+        message: "If an account exists with this email, a password reset link has been sent",
+      });
+    }
+
+    // Generate reset token (valid for 1 hour)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    user.resetPasswordToken = hashedResetToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
+    await user.save();
+
+    // Send email with reset link
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      // Don't fail the request if email fails
+    }
+
+    return res.status(200).json({
+      message: "If an account exists with this email, a password reset link has been sent",
+      // Remove this in production:
+      resetToken: process.env.NODE_ENV === "development" ? resetToken : undefined,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "token and new password are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "password must be at least 8 characters" });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "invalid or expired reset token" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    // Invalidate all refresh tokens
+    await RefreshToken.deleteMany({ userId: user._id });
+
+    return res.status(200).json({
+      message: "Password reset successfully. Please login with your new password.",
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ error: "Verification token is required" });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired verification token" });
+    }
+
+    user.isEmailVerified = true;
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Email verified successfully. You can now make payments.",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const uploadAvatar = [
+  upload.single("avatar"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Convert to base64 for storage
+      const avatar = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { avatar },
+        { new: true }
+      ).select("-password");
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.status(200).json({
+        message: "Avatar uploaded successfully",
+        url: avatar,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+];
+
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ error: "Email is already verified" });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+    user.emailVerificationToken = hashedVerificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 86400000); // 24 hours
+    await user.save();
+
+    try {
+      await sendEmailVerification(user.email, verificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      return res.status(500).json({ error: "Failed to send verification email" });
+    }
+
+    return res.status(200).json({
+      message: "Verification email sent. Please check your inbox.",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };

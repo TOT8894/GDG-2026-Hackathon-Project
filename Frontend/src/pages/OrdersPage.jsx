@@ -1,118 +1,168 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
-import { ApiError, normalizeList, paymentId, paymentsApi } from "../lib/api";
-import { formatMoney } from "../lib/format";
-
-function pickAmount(p) {
-  const n = Number(p?.amount ?? p?.total ?? p?.amountTotal ?? 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function pickStatus(p) {
-  return p?.status ?? p?.paymentStatus ?? "—";
-}
+import OrderStatusBadge from "../components/OrderStatusBadge";
+import { ordersApi } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { Package, ShoppingBag } from "lucide-react";
 
 export default function OrdersPage({ theme, setTheme }) {
-  const [items, setItems] = useState([]);
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("buyer"); // 'buyer' or 'seller'
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setError("");
-      setLoading(true);
-      try {
-        const data = await paymentsApi.list();
-        if (!cancelled) setItems(normalizeList(data));
-      } catch (e) {
-        if (!cancelled) {
-          setError(
-            e instanceof ApiError ? e.message : e?.message || "Failed to load orders",
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    fetchOrders();
   }, []);
 
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await ordersApi.getAll();
+      const data = Array.isArray(response) ? response : response.data || [];
+      setOrders(data);
+    } catch (err) {
+      console.error("Fetch orders error:", err);
+      setError(err.message || "Failed to load orders");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buyerOrders = orders.filter((order) => order.buyerId._id === user?._id);
+  const sellerOrders = orders.filter((order) => order.sellerId._id === user?._id);
+  const displayOrders = activeTab === "buyer" ? buyerOrders : sellerOrders;
+
   return (
-    <div className="min-h-screen bg-gray-400 py-6 text-gray-900 dark:bg-gray-900 dark:text-gray-100 sm:py-8">
-      <div className="mx-auto w-full max-w-checkout px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-white p-6 shadow-checkout dark:bg-gray-800 sm:p-8">
-          <SiteHeader theme={theme} setTheme={setTheme} />
-          <h1 className="mt-6 text-xl font-semibold">My orders</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Each row is tied to a payment record from your account (
-            <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-700">
-              GET /payments
-            </code>
-            ).
-          </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <SiteHeader theme={theme} setTheme={setTheme} />
 
-          {error ? (
-            <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
-              {error}
-            </p>
-          ) : null}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+          My Orders
+        </h1>
 
-          {loading ? (
-            <p className="mt-8 text-sm text-gray-500">Loading orders…</p>
-          ) : items.length === 0 ? (
-            <p className="mt-8 text-sm text-gray-600 dark:text-gray-400">
-              No orders yet.{" "}
-              <Link
-                to="/checkout"
-                className="font-medium text-ng-primary-600 hover:underline dark:text-ng-primary-400"
-              >
-                Go to checkout
-              </Link>
-            </p>
-          ) : (
-            <ul className="mt-6 divide-y divide-gray-200 dark:divide-gray-700">
-              {items.map((p) => {
-                const id = paymentId(p);
-                return (
-                  <li
-                    key={id || JSON.stringify(p)}
-                    className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        Order #{id || "—"}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Status: {pickStatus(p)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-sm font-semibold tabular-nums">
-                        {formatMoney(pickAmount(p))}
-                      </span>
-                      <Link
-                        to={`/orders/${id}`}
-                        className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-700"
-                      >
-                        Details
-                      </Link>
-                      <Link
-                        to={`/tracking/${id}`}
-                        className="rounded-lg bg-ng-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-ng-primary-700 dark:bg-ng-primary-500 dark:hover:bg-ng-primary-400"
-                      >
-                        Track
-                      </Link>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setActiveTab("buyer")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors ${activeTab === "buyer"
+              ? "bg-blue-600 text-white"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}
+          >
+            <ShoppingBag className="w-5 h-5" />
+            As Buyer ({buyerOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("seller")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-colors ${activeTab === "seller"
+              ? "bg-blue-600 text-white"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}
+          >
+            <Package className="w-5 h-5" />
+            As Seller ({sellerOrders.length})
+          </button>
         </div>
+
+        {/* Content */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : displayOrders.length === 0 ? (
+          <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg">
+            <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              No orders found as {activeTab}
+            </p>
+            {activeTab === "buyer" && (
+              <Link
+                to="/marketplace"
+                className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+              >
+                Browse Marketplace
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {displayOrders.map((order) => (
+              <div
+                key={order._id}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex gap-6">
+                  {/* Listing Image */}
+                  <div className="flex-shrink-0">
+                    {order.listingId?.images?.[0] ? (
+                      <img
+                        src={order.listingId.images[0]}
+                        alt={order.listingId.title}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Order Details */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {order.listingId?.title || "Listing Unavailable"}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Order ID: {order._id}
+                        </p>
+                      </div>
+                      <OrderStatusBadge status={order.status} />
+                    </div>
+
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400 mb-3">
+                      {order.price} ETB
+                    </p>
+
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <span>
+                        {activeTab === "buyer" ? "Seller" : "Buyer"}:{" "}
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {activeTab === "buyer"
+                            ? order.sellerId?.fullName
+                            : order.buyerId?.fullName}
+                        </span>
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <Link
+                      to={`/orders/${order._id}`}
+                      className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

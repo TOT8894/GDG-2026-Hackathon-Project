@@ -2,11 +2,21 @@ import Notification from "../models/notificationModel.js";
 
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({
-      userId: req.user._id,
-    }).sort({ createdAt: -1 });
+    const { page = 1, limit = 20, type, unread } = req.query;
+    const query = { userId: req.user._id };
+    if (type) query.type = type;
+    if (unread === "true") query.isRead = false;
 
-    res.json({ data: notifications });
+    const [notifications, total, unreadCount] = await Promise.all([
+      Notification.find(query)
+        .sort({ createdAt: -1 })
+        .limit(Number(limit))
+        .skip((Number(page) - 1) * Number(limit)),
+      Notification.countDocuments(query),
+      Notification.countDocuments({ userId: req.user._id, isRead: false }),
+    ]);
+
+    res.json({ data: notifications, total, unreadCount, page: Number(page), limit: Number(limit) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -14,11 +24,7 @@ export const getNotifications = async (req, res) => {
 
 export const getUnreadCount = async (req, res) => {
   try {
-    const count = await Notification.countDocuments({
-      userId: req.user._id,
-      isRead: false,
-    });
-
+    const count = await Notification.countDocuments({ userId: req.user._id, isRead: false });
     res.json({ unread: count });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -28,14 +34,13 @@ export const getUnreadCount = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.body;
-
-    const updated = await Notification.findByIdAndUpdate(
-      notificationId,
+    const n = await Notification.findOneAndUpdate(
+      { _id: notificationId, userId: req.user._id },
       { isRead: true },
-      { returnDocument: "after" }
+      { new: true }
     );
-
-    res.json({ message: "Marked as read", data: updated });
+    if (!n) return res.status(404).json({ error: "Notification not found" });
+    res.json({ message: "Marked as read", data: n });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -43,11 +48,7 @@ export const markAsRead = async (req, res) => {
 
 export const markAllAsRead = async (req, res) => {
   try {
-    await Notification.updateMany(
-      { userId: req.user._id, isRead: false },
-      { isRead: true }
-    );
-
+    await Notification.updateMany({ userId: req.user._id, isRead: false }, { isRead: true });
     res.json({ message: "All notifications marked as read" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -56,8 +57,17 @@ export const markAllAsRead = async (req, res) => {
 
 export const deleteNotification = async (req, res) => {
   try {
-    await Notification.findByIdAndDelete(req.params.id);
+    await Notification.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     res.json({ message: "Notification deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const clearAll = async (req, res) => {
+  try {
+    await Notification.deleteMany({ userId: req.user._id });
+    res.json({ message: "All notifications cleared" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

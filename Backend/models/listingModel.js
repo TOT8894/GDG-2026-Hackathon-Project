@@ -34,6 +34,12 @@ const listingSchema = new mongoose.Schema(
       required: true,
     },
 
+    condition: {
+      type: String,
+      enum: ["new", "used", "old"],
+      default: "used",
+    },
+
     sellerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // reference to users collection

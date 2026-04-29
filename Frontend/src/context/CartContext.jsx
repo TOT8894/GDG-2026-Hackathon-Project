@@ -1,58 +1,92 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { DEFAULT_CART_LINES, PRODUCTS } from "../data/catalog";
+import { createContext, useContext, useState, useEffect } from "react";
+import { cartApi, ApiError } from "../lib/api";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState(DEFAULT_CART_LINES);
+  const { isAuthenticated } = useAuth();
+  const [cart, setCart] = useState({ items: [], totalAmount: 0 });
+  const [loading, setLoading] = useState(false);
 
-  const addToCart = useCallback((productId, amount = 1) => {
-    const product = PRODUCTS.find((p) => p.id === productId);
-    if (!product) return;
-    setCart((lines) => {
-      const existing = lines.find((l) => l.id === productId);
-      if (existing) {
-        return lines.map((l) =>
-          l.id === productId ? { ...l, quantity: l.quantity + amount } : l,
-        );
-      }
-      return [
-        ...lines,
-        {
-          id: product.id,
-          name: product.name,
-          unitPrice: product.unitPrice,
-          quantity: amount,
-          swatchClass: product.swatchClass,
-        },
-      ];
-    });
-  }, []);
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCart();
+    } else {
+      setCart({ items: [], totalAmount: 0 });
+    }
+  }, [isAuthenticated]);
 
-  const updateQuantity = useCallback((id, delta) => {
-    setCart((lines) =>
-      lines.map((line) => {
-        if (line.id !== id) return line;
-        const next = Math.max(1, line.quantity + delta);
-        return { ...line, quantity: next };
-      }),
-    );
-  }, []);
+  async function loadCart() {
+    try {
+      setLoading(true);
+      const response = await cartApi.getCart();
+      setCart(response.data || { items: [], totalAmount: 0 });
+    } catch (error) {
+      console.error("Failed to load cart:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const clearCart = useCallback(() => {
-    setCart([]);
-  }, []);
+  async function addToCart(listingId, quantity = 1) {
+    try {
+      const response = await cartApi.addToCart({ listingId, quantity });
+      setCart(response.data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-  const value = useMemo(
-    () => ({ cart, setCart, addToCart, updateQuantity, clearCart }),
-    [cart, addToCart, updateQuantity, clearCart],
-  );
+  async function updateQuantity(listingId, quantity) {
+    try {
+      const response = await cartApi.updateItem({ listingId, quantity });
+      setCart(response.data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function removeItem(listingId) {
+    try {
+      const response = await cartApi.removeItem(listingId);
+      setCart(response.data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function clearCart() {
+    try {
+      const response = await cartApi.clearCart();
+      setCart(response.data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  const value = {
+    cart,
+    loading,
+    addToCart,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    reloadCart: loadCart,
+    itemCount: cart.items?.length || 0,
+  };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within CartProvider");
+  }
+  return context;
 }

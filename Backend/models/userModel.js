@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    fullName: {
       type: String,
       required: true,
       trim: true,
@@ -59,6 +59,22 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpires: {
+      type: Date,
+    },
+    emailVerificationToken: {
+      type: String,
+    },
+    emailVerificationExpires: {
+      type: Date,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

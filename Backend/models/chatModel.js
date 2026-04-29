@@ -12,6 +12,11 @@ const chatSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        listingId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Listing",
+            default: null,
+        },
         message: {
             type: String,
             trim: true,
@@ -38,6 +43,11 @@ const chatSchema = new mongoose.Schema(
         timestamps: true,
     }
 );
+
+// Indexes for faster queries
+chatSchema.index({ senderId: 1, receiverId: 1 });
+chatSchema.index({ listingId: 1 });
+chatSchema.index({ createdAt: -1 });
 
 const ChatMessage = mongoose.model("ChatMessage", chatSchema);
 export default ChatMessage;

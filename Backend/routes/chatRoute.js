@@ -1,24 +1,23 @@
 import express from "express";
 import {
-    sendMessage,
-    getMyChats,
-    getConversation,
-    getChatById,
-    updateMessage,
-    deleteMessage,
-    markMessageRead,
+    sendMessage, getMyChats, getConversation,
+    getChatById, deleteMessage, markMessageRead, getAllChats,
 } from "../controller/chatController.js";
 import { authenticateAccessToken } from "../middleware/authentication.js";
+import { authorization as authorize } from "../middleware/autherization.js";
 
 const chatRoutes = express.Router();
+chatRoutes.use(authenticateAccessToken);
 
+// Admin: see all messages
+chatRoutes.get("/admin/all", authorize("admin"), getAllChats);
 
-chatRoutes.post("/", authenticateAccessToken, sendMessage);
-chatRoutes.get("/", authenticateAccessToken, getMyChats);
-chatRoutes.get("/conversation/:userId", authenticateAccessToken, getConversation);
-chatRoutes.get("/:id", authenticateAccessToken, getChatById);
-chatRoutes.put("/:id", authenticateAccessToken, updateMessage);
-chatRoutes.delete("/:id", authenticateAccessToken, deleteMessage);
-chatRoutes.put("/:id/read", authenticateAccessToken, markMessageRead);
+// User routes
+chatRoutes.post("/", sendMessage);
+chatRoutes.get("/", getMyChats);
+chatRoutes.get("/conversation/:userId", getConversation);
+chatRoutes.get("/:id", getChatById);
+chatRoutes.delete("/:id", deleteMessage);
+chatRoutes.put("/:id/read", markMessageRead);
 
 export default chatRoutes;
