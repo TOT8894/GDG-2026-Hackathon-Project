@@ -9,13 +9,8 @@ const __dirname = path.dirname(__filename);
 // Load env vars
 dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 
-console.log("Email Service - EMAIL_USER:", process.env.EMAIL_USER ? "set" : "not set");
-console.log("Email Service - EMAIL_PASS:", process.env.EMAIL_PASS ? "set" : "not set");
-
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -24,19 +19,6 @@ const transporter = nodemailer.createTransport({
     rejectUnauthorized: false,
   },
 });
-
-// Verify transporter on startup (only if credentials exist)
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error("Email transporter verification failed:", error.message);
-    } else {
-      console.log("Email transporter is ready");
-    }
-  });
-} else {
-  console.log("Email transporter not configured - EMAIL_USER or EMAIL_PASS not set");
-}
 
 const BASE = `
   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:24px;border-radius:12px;">
@@ -55,19 +37,19 @@ function wrap(content) {
 }
 
 async function send(to, subject, html) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    return false;
+  }
+
   try {
-    console.log(`Sending email to: ${to}, subject: ${subject}`);
     const info = await transporter.sendMail({
       from: `"Kuralew" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html
     });
-    console.log("Email sent successfully, MessageId:", info.messageId);
     return true;
   } catch (err) {
-    console.error("Email error:", err.message);
-    console.error("Full error:", err);
     return false;
   }
 }
