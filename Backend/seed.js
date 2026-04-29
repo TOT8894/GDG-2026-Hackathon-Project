@@ -10,7 +10,8 @@ import Payment from "./models/paymentModel.js";
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI||mongodb+srv://shanbeldires:shanbel@cluster0.aphrwsa.mongodb.net/Digital-Kuralew?retryWrites=true&w=majority
+;
 
 async function seed() {
   try {
