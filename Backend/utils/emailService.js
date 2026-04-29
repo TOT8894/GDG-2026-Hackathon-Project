@@ -57,11 +57,11 @@ function wrap(content) {
 async function send(to, subject, html) {
   try {
     console.log(`Sending email to: ${to}, subject: ${subject}`);
-    const info = await transporter.sendMail({ 
-      from: `"Kuralew" <${process.env.EMAIL_USER}>`, 
-      to, 
-      subject, 
-      html 
+    const info = await transporter.sendMail({
+      from: `"Kuralew" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html
     });
     console.log("Email sent successfully, MessageId:", info.messageId);
     return true;
