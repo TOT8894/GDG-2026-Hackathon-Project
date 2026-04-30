@@ -106,14 +106,17 @@ export const login = async (req, res) => {
 export const signup = async (req, res) => {
   try {
     const { fullName, email, password, role, phone, avatar, location } = req.body;
+    console.log("📝 Signup attempt:", email);
 
     const { error } = userValidationSchema.validate(req.body);
     if (error) {
+      console.error("❌ Signup validation error:", error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.warn("⚠️ Signup failed: user already exists", email);
       return res.status(400).json({ error: "user already exists" });
     }
 
