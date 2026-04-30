@@ -19,13 +19,16 @@ export default function VerifyEmailPage() {
 
     async function verifyEmail() {
         try {
-            const res = await apiRequest(`/auth/verify-email/${token}`, { method: "GET", auth: false });
+            const url = `/auth/verify-email/${token}`;
+            const res = await apiRequest(url, { method: "GET", auth: false });
             setStatus("success");
             setMessage(res.message || "Email verified successfully!");
             setTimeout(() => navigate("/login"), 3000);
         } catch (err) {
             setStatus("error");
-            setMessage(err.message || "Invalid or expired verification link.");
+            // Show more detailed error if available
+            const errorMessage = err.body?.error || err.message || "Invalid or expired verification link.";
+            setMessage(errorMessage);
         }
     }
 
@@ -63,7 +66,12 @@ export default function VerifyEmailPage() {
                                 </svg>
                             </div>
                             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Verification Failed</h3>
-                            <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
+                            <p className="text-gray-600 dark:text-gray-300 mb-4">{message}</p>
+                            {message.includes("Invalid or expired") && (
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Please check your email for the correct link or request a new verification email.
+                                </p>
+                            )}
                             <Link
                                 to="/login"
                                 className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"

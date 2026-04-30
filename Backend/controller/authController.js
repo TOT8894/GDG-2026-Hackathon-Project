@@ -106,14 +106,17 @@ export const login = async (req, res) => {
 export const signup = async (req, res) => {
   try {
     const { fullName, email, password, role, phone, avatar, location } = req.body;
+    console.log("📝 Signup attempt:", email);
 
     const { error } = userValidationSchema.validate(req.body);
     if (error) {
+      console.error("❌ Signup validation error:", error.details[0].message);
       return res.status(400).json({ error: error.details[0].message });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.warn("⚠️ Signup failed: user already exists", email);
       return res.status(400).json({ error: "user already exists" });
     }
 
@@ -136,18 +139,17 @@ export const signup = async (req, res) => {
     user.emailVerificationExpires = new Date(Date.now() + 86400000); // 24 hours
     await user.save();
 
-    try {
-      await sendEmailVerification(user.email, verificationToken);
-    } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
-    }
+    sendEmailVerification(user.email, verificationToken)
+      .catch((emailError) => {
+        console.error("Failed to send verification email:", emailError);
+      });
 
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
     await storeRefreshToken(user._id, refreshToken);
 
     // Return verification token in development mode for testing
-    const devVerificationUrl = process.env.NODE_ENV === "development" 
+    const devVerificationUrl = process.env.NODE_ENV === "development"
       ? `${process.env.CLIENT_URL}/verify-email/${verificationToken}`
       : undefined;
 
@@ -156,10 +158,11 @@ export const signup = async (req, res) => {
       data: sanitizeUser(user),
       accessToken,
       refreshToken,
-      // For testing in development
-      ...(process.env.NODE_ENV === "development" && { 
+      // For testing in development - include email and token for easy verification
+      ...(process.env.NODE_ENV === "development" && {
         verificationToken,
-        verificationUrl: devVerificationUrl 
+        verificationUrl: devVerificationUrl,
+        email: user.email
       }),
     });
   } catch (error) {
@@ -348,6 +351,7 @@ export const forgotPassword = async (req, res) => {
       message: "If an account exists with this email, a password reset link has been sent",
       // Remove this in production:
       resetToken: process.env.NODE_ENV === "development" ? resetToken : undefined,
+      email: user.email
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -388,6 +392,7 @@ export const resetPassword = async (req, res) => {
 
     return res.status(200).json({
       message: "Password reset successfully. Please login with your new password.",
+      email: user.email
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -402,17 +407,26 @@ export const verifyEmail = async (req, res) => {
       return res.status(400).json({ error: "Verification token is required" });
     }
 
+    // Hash the token to compare with stored value
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
+    // Find user by both email verification token and check if not expired
     const user = await User.findOne({
       emailVerificationToken: hashedToken,
       emailVerificationExpires: { $gt: new Date() },
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Invalid or expired verification token" });
+      return res.status(400).json({
+        error: "Invalid or expired verification token",
+        debug: {
+          providedToken: token,
+          providedHash: hashedToken
+        }
+      });
     }
 
+    // Mark email as verified
     user.isEmailVerified = true;
     user.isVerified = true;
     user.emailVerificationToken = undefined;
@@ -485,6 +499,7 @@ export const resendVerificationEmail = async (req, res) => {
 
     return res.status(200).json({
       message: "Verification email sent. Please check your inbox.",
+      email: user.email
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
