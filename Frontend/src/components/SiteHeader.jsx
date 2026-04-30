@@ -50,9 +50,7 @@ export default function SiteHeader({ theme, setTheme }) {
           <NavLink to="/marketplace" className={navClass}>
             <LayoutDashboard className="inline size-4 mr-1" aria-hidden /> Marketplace
           </NavLink>
-          <NavLink to="/shop" className={navClass}>
-            Shop
-          </NavLink>
+        
           {isAuthenticated && (
             <NavLink to="/cart" className={navClass}>
               <ShoppingCart className="inline size-4 mr-1" aria-hidden /> Cart
