@@ -1,1490 +1,604 @@
-# 🚀 Digital Kuralew Backend
+# Digital Kuralew — GDG 2026 Hackathon Project
 
-A marketplace and chat backend for buyers, sellers, and admins built with **Node.js**, **Express**, and **MongoDB**.
+A full-stack peer-to-peer marketplace built for Ethiopia, where buyers and sellers can trade everyday goods with trust, transparency, and local payment support.
 
----
-
-## 📑 Table of Contents
-
-- [Project Overview](#-project-overview)
-- [Project Structure](#-project-structure)
-- [Technologies Used](#-technologies-used)
-- [Environment Variables](#-environment-variables)
-- [Setup & Installation](#-setup--installation)
-- [API Endpoints](#-api-endpoints)
-- [Request & Response Examples](#-request--response-examples)
-- [Data Models](#-data-models)
+**Live URLs**
+- Backend API: https://gdg-2026-hackathon-project.onrender.com/api/v1
+- Frontend: https://gdg-2026-hackathon-project.vercel.app
 
 ---
 
-Deployed Link:
+## Table of Contents
 
-Backend:  https://gdg-2026-hackathon-project.onrender.com <br>
-Frontned: https://gdg-2026-hackathon-project.vercel.app
----
-
-## 🌟 Project Overview
-
-Digital Kuralew is a full-stack marketplace and chat application. The backend provides:
-
-- JWT-based authentication with refresh tokens
-- Buyer / Seller / Admin roles
-- User registration, login, profile, logout, and refresh token flow
-- Chat messaging with single-content messages: text, image, audio, or video
-- Listing management for sellers (create, update, delete, mark as sold)
-- Order creation and management for buyers and sellers
-- Payment processing and tracking
-- Notification system for real-time updates
-- Dashboard statistics for admins
-- MongoDB persistence via Mongoose
-
-> The codebase is implemented in both `Backend/` and `Frontend/` folders.
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Environment Variables](#environment-variables)
+- [Setup & Installation](#setup--installation)
+- [API Reference](#api-reference)
+- [Data Models](#data-models)
 
 ---
 
-## 📁 Project Structure
+## Features
+
+### For Buyers
+- Browse and search active listings with filters (category, condition, price range, sort)
+- View seller trust scores and profiles
+- Add items to cart and checkout
+- Create orders and pay via escrow
+- Release payment to seller after confirming delivery
+- Request refunds on held payments
+- Leave reviews after completed orders
+- Real-time in-app notifications
+- Interactive map view of nearby listings (Leaflet)
+
+### For Sellers
+- Create, update, and delete product listings with images and geo-location
+- Listings default to Addis Ababa if no location is provided
+- View incoming orders and manage their status
+- Mark listings as sold
+- Receive payment notifications and email alerts when a buyer pays
+- Build a trust score through buyer reviews
+
+### For Admins
+- View and manage all users (activate/deactivate accounts)
+- Approve or reject listings before they go live
+- Moderate chat messages
+- View platform-wide statistics and dashboard
+
+### Platform-wide
+- JWT authentication with access + refresh token rotation
+- Email verification required before making payments
+- Password reset via email link
+- Kafka-powered async email delivery (payment receipts, promo codes, verification emails)
+- Escrow payment system — funds are held until buyer confirms delivery
+- Trust score calculated from review ratings (0–100 scale)
+- Dark/light theme toggle
+- Fully responsive UI
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                        Frontend                         │
+│         React 18 + Vite + Tailwind CSS                  │
+│   React Router · Leaflet Maps · Lucide Icons            │
+└────────────────────────┬────────────────────────────────┘
+                         │ REST API (HTTPS)
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Backend (Node.js)                    │
+│              Express 5 · Mongoose · JWT                 │
+│                                                         │
+│  Auth · Buyer · Seller · Admin · Orders · Payments      │
+│  Cart · Chat · Reviews · Notifications                  │
+└──────────┬──────────────────────────┬───────────────────┘
+           │                          │
+           ▼                          ▼
+    ┌─────────────┐           ┌──────────────┐
+    │   MongoDB   │           │    Kafka      │
+    │  (Mongoose) │           │  (KRaft mode) │
+    └─────────────┘           └──────┬───────┘
+                                     │
+                              ┌──────▼───────┐
+                              │  Email       │
+                              │  Consumer    │
+                              │ (Nodemailer) │
+                              └──────────────┘
+```
+
+**Payment escrow flow:**
+```
+Buyer creates order → Initiates payment → Funds held in escrow
+       → Buyer confirms delivery → Funds released to seller
+       → (or) Refund requested → Funds returned to buyer
+```
+
+---
+
+## Tech Stack
+
+### Backend
+| Package | Purpose |
+|---|---|
+| Node.js + Express 5 | HTTP server and routing |
+| MongoDB + Mongoose 9 | Database and ODM |
+| jsonwebtoken | Access and refresh token auth |
+| bcrypt | Password hashing |
+| KafkaJS | Async email event queue |
+| Nodemailer | Email delivery |
+| Joi | Request validation |
+| Multer | Avatar image uploads (base64) |
+| Helmet + CORS | Security headers |
+| Morgan | HTTP request logging |
+
+### Frontend
+| Package | Purpose |
+|---|---|
+| React 18 + Vite | UI framework and build tool |
+| React Router 7 | Client-side routing |
+| Tailwind CSS 3 | Utility-first styling |
+| Leaflet + React-Leaflet | Interactive maps |
+| Lucide React | Icon library |
+
+### Infrastructure
+| Service | Purpose |
+|---|---|
+| Apache Kafka 3.7 (KRaft) | Async email event streaming |
+| Docker Compose | Local Kafka setup |
+| Render | Backend hosting |
+| Vercel | Frontend hosting |
+| MongoDB Atlas | Cloud database |
+
+---
+
+## Project Structure
 
 ```
 GDG-2026-Hackathon-Project/
+├── docker-compose.yml          # Kafka (KRaft mode, no Zookeeper)
 ├── README.md
+│
 ├── Backend/
-│   ├── app.js
-│   ├── server.js
+│   ├── app.js                  # Express app, middleware, routes
+│   ├── server.js               # Entry point, DB connect, Kafka consumer start
+│   ├── seed.js                 # Database seeder
 │   ├── package.json
-│   ├── .gitignore
+│   │
 │   ├── config/
-│   │   ├── database.js
-│   │   └── env.js
+│   │   ├── database.js         # MongoDB connection
+│   │   ├── env.js              # Environment variable exports
+│   │   └── kafka.js            # Kafka client + topic definitions
+│   │
 │   ├── controller/
-│   │   ├── adminController.js
-│   │   ├── authController.js
-│   │   ├── buyerController.js
-│   │   ├── chatController.js
-│   │   ├── dashboardController.js
+│   │   ├── authController.js   # Register, login, logout, profile, password reset, email verify
+│   │   ├── buyerController.js  # Browse listings, get listing detail
+│   │   ├── sellerController.js # CRUD listings, seller orders
+│   │   ├── orderController.js  # Create and manage orders
+│   │   ├── paymentController.js# Escrow payments: initiate, confirm, release, refund
+│   │   ├── cartController.js   # Cart management
+│   │   ├── chatController.js   # Messaging between users
+│   │   ├── reviewController.js # Post-order reviews and trust score updates
 │   │   ├── notificationController.js
-│   │   ├── orderController.js
-│   │   ├── paymentController.js
-│   │   └── sellerController.js
+│   │   └── adminController.js  # User management, listing moderation
+│   │
 │   ├── middleware/
-│   │   ├── authentication.js
-│   │   ├── autherization.js
-│   │   └── errorHandler.js
+│   │   ├── authentication.js   # JWT verification
+│   │   ├── autherization.js    # Role-based access control
+│   │   └── errorHandler.js     # Global error handler
+│   │
 │   ├── models/
-│   │   ├── chatModel.js
-│   │   ├── entryModel.js
+│   │   ├── userModel.js
 │   │   ├── listingModel.js
-│   │   ├── notificationModel.js
 │   │   ├── orderModel.js
 │   │   ├── paymentModel.js
-│   │   ├── refreshToken.js
-│   │   └── userModel.js
+│   │   ├── cartModel.js
+│   │   ├── chatModel.js
+│   │   ├── reviewModel.js
+│   │   ├── notificationModel.js
+│   │   ├── entryModel.js       # Wallet/ledger entries
+│   │   └── refreshToken.js
+│   │
 │   ├── routes/
-│   │   ├── adminRoute.js
 │   │   ├── authRoute.js
 │   │   ├── buyerRoute.js
-│   │   ├── chatRoute.js
-│   │   ├── dashboardRoute.js
-│   │   ├── notificationRoute.js
+│   │   ├── sellerRoute.js
 │   │   ├── orderRoute.js
 │   │   ├── paymentsRoute.js
-│   │   └── sellerRoute.js
+│   │   ├── cartRoute.js
+│   │   ├── chatRoute.js
+│   │   ├── reviewRoute.js
+│   │   ├── notificationRoute.js
+│   │   └── adminRoute.js
+│   │
 │   ├── utils/
-│   │   └── error.util.js
+│   │   ├── emailService.js     # Email templates (verification, reset, payment)
+│   │   ├── emailSender.js      # Nodemailer transport
+│   │   ├── notify.js           # In-app notification helper
+│   │   ├── error.util.js
+│   │   └── kafka/
+│   │       ├── producer.js     # Publish email events to Kafka
+│   │       └── consumer.js     # Consume and send emails
+│   │
 │   └── validation/
-│       ├── chatValidation.js
-│       └── userValidation.js
+│       ├── userValidation.js   # Joi schemas for user input
+│       └── chatValidation.js
+│
+└── Frontend/
+    ├── index.html
+    ├── vite.config.js
+    ├── tailwind.config.js
+    └── src/
+        ├── App.jsx             # Routes definition
+        ├── main.jsx
+        ├── index.css
+        │
+        ├── pages/
+        │   ├── HomePage.jsx
+        │   ├── MarketplacePage.jsx
+        │   ├── ListingDetailPage.jsx
+        │   ├── CreateListingPage.jsx
+        │   ├── SellerDashboardPage.jsx
+        │   ├── CartPage.jsx
+        │   ├── CheckoutPage.jsx
+        │   ├── OrdersPage.jsx
+        │   ├── OrderDetailPage.jsx
+        │   ├── PaymentsPage.jsx
+        │   ├── ChatPage.jsx
+        │   ├── AdminDashboardPage.jsx
+        │   ├── ProfilePage.jsx
+        │   ├── LoginPage.jsx
+        │   ├── RegisterPage.jsx
+        │   ├── ForgotPasswordPage.jsx
+        │   ├── ResetPasswordPage.jsx
+        │   ├── VerifyEmailPage.jsx
+        │   └── ChangePasswordPage.jsx
+        │
+        ├── components/
+        │   ├── SiteHeader.jsx
+        │   ├── ListingCard.jsx
+        │   ├── MarketplaceMap.jsx
+        │   ├── LocationPicker.jsx
+        │   ├── ImageUploader.jsx
+        │   ├── NotificationBell.jsx
+        │   ├── OrderStatusBadge.jsx
+        │   ├── TrustScore.jsx
+        │   └── ProtectedRoute.jsx
+        │
+        ├── context/
+        │   ├── AuthContext.jsx
+        │   └── CartContext.jsx
+        │
+        └── lib/
+            ├── api.js          # Axios instance with auth headers
+            ├── format.js       # Currency and date formatters
+            └── tracking.js     # Order tracking helpers
 ```
 
 ---
 
-## 🛠 Technologies Used
+## Environment Variables
 
-- Node.js
-- Express
-- MongoDB / Mongoose
-- JWT
-- crypto
-- bcrypt
-- Joi
-- dotenv
-- cors
-- helmet
-- morgan
+### Backend — `Backend/.env`
 
----
-
-## 🔑 Environment Variables
-
-Create a `.env` file inside `Backend/` with these values:
+Copy `Backend/.env.example` and fill in your values:
 
 ```env
 PORT=5000
-MONGO_URI=your_mongo_connection_string
-ACCESS_TOKEN_SECRET_KEY=your_access_secret
-REFRESH_TOKEN_SECRET_KEY=your_refresh_secret
+MONGO_URI=your_mongodb_connection_string
+ACCESS_TOKEN_SECRET_KEY=your_super_secret_access_key
+REFRESH_TOKEN_SECRET_KEY=your_super_secret_refresh_key
 ACCESS_TOKEN_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_IN=7d
-CLIENT_URL=http://localhost:3000
+CLIENT_URL=http://localhost:6006
+
+# Kafka (defaults work with the docker-compose setup)
+KAFKA_BROKERS=localhost:9092
+KAFKA_CLIENT_ID=kuralew-backend
+
+# Email — use a Gmail App Password, NOT your account password
+# Guide: https://support.google.com/accounts/answer/185833
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_16_digit_app_password
+```
+
+### Frontend — `Frontend/.env`
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
 ---
 
-## 🚀 Setup & Installation
+## Setup & Installation
+
+### Prerequisites
+- Node.js 18+
+- MongoDB (local or Atlas)
+- Docker (for Kafka)
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/TOT8894/GDG-2026-Hackathon-Project.git
+cd GDG-2026-Hackathon-Project
+```
+
+### 2. Start Kafka
+
+```bash
+docker-compose up -d
+```
+
+This starts a single-node Kafka broker in KRaft mode (no Zookeeper needed) on port `9092`.
+
+### 3. Start the Backend
 
 ```bash
 cd Backend
+cp .env.example .env
+# fill in your .env values
 npm install
 npm run dev
 ```
 
-The app will be available at:
+Server starts on ``. Health check: `GET /api/v1/health`
 
+### 4. Start the Frontend
+
+```bash
+cd Frontend
+npm install
+npm run dev
 ```
-https://gdg-2026-hackathon-project.onrender.com/api/v1
+
+App starts on `https://gdg-2026-hackathon-project.vercel.app/` (or whichever port Vite assigns).
+
+### 5. (Optional) Seed the database
+
+```bash
+cd Backend
+node seed.js
 ```
 
 ---
 
-## 🔗 API Endpoints
+## API Reference
 
-### Authentication
+All endpoints are prefixed with `/api/v1`. Protected routes require:
+```
+Authorization: Bearer <accessToken>
+```
 
-| Method | Endpoint              | Description                 | Auth Required |
-| ------ | --------------------- | --------------------------- | ------------- |
-| POST   | `/auth/register`      | Register a new user         | ❌            |
-| POST   | `/auth/login`         | Login user                  | ❌            |
-| POST   | `/auth/refresh`       | Refresh access token        | ❌            |
-| GET    | `/auth/profile`       | Get current user profile    | ✅            |
-| PUT    | `/auth/updateProfile` | Update current user profile | ✅            |
-| POST   | `/auth/logout`        | Logout current user         | ✅            |
+---
 
-### Chat
+### Authentication — `/api/v1/auth`
 
-| Method | Endpoint                     | Description                    | Auth Required |
-| ------ | ---------------------------- | ------------------------------ | ------------- |
-| POST   | `/chat`                      | Send chat message              | ✅            |
-| GET    | `/chat`                      | Get all chats for current user | ✅            |
-| GET    | `/chat/conversation/:userId` | Get conversation with a user   | ✅            |
-| GET    | `/chat/:id`                  | Get one chat message           | ✅            |
-| PUT    | `/chat/:id`                  | Update a chat message          | ✅            |
-| PUT    | `/chat/:id/read`             | Mark message as read           | ✅            |
-| DELETE | `/chat/:id`                  | Delete a chat message          | ✅            |
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/auth/signup` | Register a new user | ❌ |
+| POST | `/auth/login` | Login and receive tokens | ❌ |
+| POST | `/auth/refresh` | Get a new access token | ❌ |
+| POST | `/auth/logout` | Invalidate refresh token | ✅ |
+| GET | `/auth/me` | Get current user profile | ✅ |
+| PUT | `/auth/update-profile` | Update profile fields | ✅ |
+| POST | `/auth/change-password` | Change password (invalidates all sessions) | ✅ |
+| POST | `/auth/forgot-password` | Send password reset email | ❌ |
+| POST | `/auth/reset-password` | Reset password with token | ❌ |
+| GET | `/auth/verify-email/:token` | Verify email address | ❌ |
+| POST | `/auth/resend-verification` | Resend verification email | ✅ |
+| POST | `/auth/upload-avatar` | Upload profile avatar (multipart) | ✅ |
+
+---
+
+### Buyer — `/api/v1/buyer`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/buyer/listings` | Browse active listings (search, filter, paginate) | ❌ |
+| GET | `/buyer/listings/:id` | Get listing detail (increments view count) | ❌ |
+
+**Query params for `GET /buyer/listings`:**
+- `search` — full-text search on title and description
+- `category` — filter by category
+- `condition` — `new`, `used`, or `old`
+- `minPrice` / `maxPrice` — price range in ETB
+- `sort` — `price-low`, `price-high`, `oldest` (default: newest)
+- `page` / `limit` — pagination (default: page 1, limit 20)
+
+---
+
+### Seller — `/api/v1/seller`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/seller/listings` | Create a new listing | ✅ seller |
+| PUT | `/seller/listings/:id` | Update own listing | ✅ seller |
+| DELETE | `/seller/listings/:id` | Delete own listing | ✅ seller |
+| PATCH | `/seller/listings/:id/sold` | Mark listing as sold | ✅ seller |
+| GET | `/seller/listings` | Get all own listings | ✅ seller |
+| GET | `/seller/orders` | Get orders for own listings | ✅ seller |
+
+---
+
+### Orders — `/api/v1/orders`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/orders` | Create an order for a listing | ✅ |
+| GET | `/orders` | Get own orders (buyer or seller) | ✅ |
+| GET | `/orders/:id` | Get order detail | ✅ |
+| PATCH | `/orders/:id/status` | Update order status | ✅ |
+
+---
+
+### Payments — `/api/v1/payments`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/payments/initiate` | Initiate payment (holds funds in escrow) | ✅ verified email |
+| POST | `/payments/confirm` | Confirm a pending payment | ✅ |
+| POST | `/payments/release` | Release escrow to seller (buyer confirms delivery) | ✅ buyer/admin |
+| POST | `/payments/refund` | Refund held payment to buyer | ✅ buyer/seller/admin |
+| GET | `/payments` | Get own payment history | ✅ |
+| GET | `/payments/:id` | Get payment detail | ✅ participant/admin |
+
+> Email verification is required before initiating any payment.
+
+---
+
+### Cart — `/api/v1/cart`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/cart` | Get current cart | ✅ |
+| POST | `/cart` | Add item to cart | ✅ |
+| DELETE | `/cart/:itemId` | Remove item from cart | ✅ |
+| DELETE | `/cart` | Clear entire cart | ✅ |
+
+---
+
+### Chat — `/api/v1/chat`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/chat` | Send a message (text or image, optionally tied to a listing) | ✅ |
+| GET | `/chat` | Get all conversations for current user | ✅ |
+| GET | `/chat/conversation/:userId` | Get full conversation with a user | ✅ |
+| GET | `/chat/:id` | Get a single message | ✅ |
+| DELETE | `/chat/:id` | Delete a message | ✅ |
+| PATCH | `/chat/:id/read` | Mark message as read | ✅ |
+
+---
+
+### Reviews — `/api/v1/reviews`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/reviews` | Submit a review for a completed order | ✅ |
+| GET | `/reviews/user/:userId` | Get all reviews for a user | ❌ |
+| GET | `/reviews/:id` | Get a single review | ❌ |
+| GET | `/reviews/mine` | Get reviews written by current user | ✅ |
+| GET | `/reviews/can-review/:orderId` | Check if current user can review an order | ✅ |
+
+> Reviews are only allowed on completed orders. Each party (buyer/seller) can review the other once per order. Trust scores are recalculated automatically after each review.
+
+---
+
+### Notifications — `/api/v1/notifications`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/notifications` | Get all notifications | ✅ |
+| GET | `/notifications/unread-count` | Get unread count | ✅ |
+| PATCH | `/notifications/:id/read` | Mark one as read | ✅ |
+| PATCH | `/notifications/read-all` | Mark all as read | ✅ |
+| DELETE | `/notifications/:id` | Delete a notification | ✅ |
+
+---
+
+### Admin — `/api/v1/admin`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/admin/users` | List all users | ✅ admin |
+| PATCH | `/admin/users/:id/toggle-active` | Activate or deactivate a user | ✅ admin |
+| GET | `/admin/listings` | List all listings | ✅ admin |
+| PATCH | `/admin/listings/:id/approve` | Approve a pending listing | ✅ admin |
+| PATCH | `/admin/listings/:id/reject` | Reject a listing | ✅ admin |
+| GET | `/admin/chat` | View all messages (moderation) | ✅ admin |
+| GET | `/admin/stats` | Platform-wide statistics | ✅ admin |
+
+---
+
+## Data Models
+
+### User
+| Field | Type | Notes |
+|---|---|---|
+| fullName | String | required |
+| email | String | unique, lowercase |
+| password | String | bcrypt hashed |
+| role | String | `buyer`, `seller`, `admin` |
+| isVerified | Boolean | manual admin verification |
+| isEmailVerified | Boolean | email link verification |
+| isActive | Boolean | account status |
+| avatar | String | base64 encoded image |
+| phone | String | |
+| location | Object | `{ latitude, longitude }` |
+| trustScore | Number | 0–100, calculated from reviews |
+| balance | Number | wallet balance in ETB |
+| resetPasswordToken | String | hashed, expires in 1 hour |
+| emailVerificationToken | String | hashed, expires in 24 hours |
 
 ### Listing
-
-| Method | Endpoint                    | Description                     | Auth Required |
-| ------ | --------------------------- | ------------------------------- | ------------- |
-| GET    | `/buyer/listings`           | Get all active listings (buyer) | ✅            |
-| POST   | `/seller/listings`          | Create a new listing (seller)   | ✅            |
-| PUT    | `/seller/listings/:id`      | Update a listing (seller)       | ✅            |
-| DELETE | `/seller/listings/:id`      | Delete a listing (seller)       | ✅            |
-| PATCH  | `/seller/listings/:id/sold` | Mark listing as sold (seller)   | ✅            |
-| GET    | `/admin/listings`           | Get all listings (admin)        | ✅ (admin)    |
-| POST   | `/admin/listings/approve`   | Approve listing (admin)         | ✅ (admin)    |
-| POST   | `/admin/listings/reject`    | Reject listing (admin)          | ✅ (admin)    |
+| Field | Type | Notes |
+|---|---|---|
+| title | String | required |
+| description | String | required |
+| price | Number | in ETB |
+| currency | String | default `ETB` |
+| images | [String] | array of URLs or base64 |
+| category | String | required |
+| condition | String | `new`, `used`, `old` |
+| sellerId | ObjectId | ref User |
+| location | Object | `{ latitude, longitude, address }` |
+| status | String | `active`, `sold`, `pending`, `rejected` |
+| isBoosted | Boolean | featured listing flag |
+| views | Number | incremented on detail view |
+| likes | Number | |
 
 ### Order
-
-| Method | Endpoint               | Description                        | Auth Required |
-| ------ | ---------------------- | ---------------------------------- | ------------- |
-| POST   | `/buyer/orders/create` | Create order for a listing (buyer) | ✅            |
-| GET    | `/seller/orders`       | Get seller's orders (seller)       | ✅            |
-
-### Notification
-
-| Method | Endpoint                      | Description                    | Auth Required |
-| ------ | ----------------------------- | ------------------------------ | ------------- |
-| GET    | `/notifications`              | Get all notifications for user | ✅            |
-| GET    | `/notifications/unread-count` | Get unread notification count  | ✅            |
-| POST   | `/notifications/read`         | Mark notification as read      | ✅            |
-| POST   | `/notifications/read-all`     | Mark all notifications as read | ✅            |
-| DELETE | `/notifications/:id`          | Delete a notification          | ✅            |
-
-### Dashboard
-
-| Method | Endpoint     | Description              | Auth Required |
-| ------ | ------------ | ------------------------ | ------------- |
-| GET    | `/dashboard` | Get dashboard statistics | ✅            |
-
-### Entry (Wallet/Transaction)
-
-| Method            | Endpoint | Description | Auth Required |
-| ----------------- | -------- | ----------- | ------------- |
-| (not implemented) |          |             |               |
-
-### Admin
-
-| Method | Endpoint           | Description               | Auth Required |
-| ------ | ------------------ | ------------------------- | ------------- |
-| GET    | `/admin/users`     | Get all users             | ✅ (admin)    |
-| POST   | `/admin/users/ban` | Ban a user                | ✅ (admin)    |
-| GET    | `/admin/reports`   | Get reports (placeholder) | ✅ (admin)    |
+| Field | Type | Notes |
+|---|---|---|
+| listingId | ObjectId | ref Listing |
+| buyerId | ObjectId | ref User |
+| sellerId | ObjectId | ref User |
+| price | Number | snapshot of listing price |
+| status | String | `pending`, `paid`, `shipped`, `completed`, `cancelled` |
+| paymentId | ObjectId | ref Payment |
 
 ### Payment
+| Field | Type | Notes |
+|---|---|---|
+| orderId | ObjectId | ref Order |
+| buyerId | ObjectId | ref User |
+| sellerId | ObjectId | ref User |
+| amount | Number | in ETB |
+| currency | String | default `ETB` |
+| status | String | `pending`, `held`, `released`, `refunded` |
+| method | String | `telebirr`, `cbe_birr`, `amole`, `awash_birr`, `cash_on_delivery` |
+| escrow | Boolean | always true |
+| transactionRef | String | unique `TXN-XXXXXXXX` |
+| isFlagged | Boolean | admin fraud flag |
 
-| Method | Endpoint                   | Description                 | Auth Required |
-| ------ | -------------------------- | --------------------------- | ------------- |
-| POST   | `/buyer/payments/initiate` | Initiate payment for order  | ✅            |
-| POST   | `/payments/confirm`        | Confirm payment (hold→held) | ✅            |
-| POST   | `/payments/release`        | Release payment to seller   | ✅            |
-| POST   | `/payments/refund`         | Refund payment              | ✅            |
-| GET    | `/payments`                | Get payment history         | ✅            |
-| GET    | `/payments/:id`            | Get payment by ID           | ✅            |
+### Review
+| Field | Type | Notes |
+|---|---|---|
+| orderId | ObjectId | ref Order — must be `completed` |
+| reviewerId | ObjectId | ref User |
+| reviewedUserId | ObjectId | ref User |
+| rating | Number | 1–5 |
+| comment | String | optional |
+| type | String | `buyer_to_seller` or `seller_to_buyer` |
 
----
+### Chat Message
+| Field | Type | Notes |
+|---|---|---|
+| senderId | ObjectId | ref User |
+| receiverId | ObjectId | ref User |
+| message | String | text content |
+| imageUrl | String | optional image |
+| listingId | ObjectId | optional — links message to a listing |
+| status | String | `sent`, `delivered`, `seen` |
 
-## 📝 Numbered Request & Response Examples
-
-### 1. Register User
-
-**Request**
-
-```http
-POST /api/v1/auth/register
-Content-Type: application/json
-
-{
-  "fullName": "John Doqe",
-  "email": "johon1@example.com",
-  "password": "securePassword123",
-  "role": "admin",
-  "phone": "0987654321"
-}
-```
-
-**Response**
-
-```json
-{
-"message": "User registered successfully",
-    "data": {
-        "_id": "69eb19e7fe6fee759ca59a21",
-        "fullName": "John Doqe",
-        "email": "johon1@example.com",
-        "role": "admin",
-        "isVerified": false,
-        "isActive": true,
-        "avatar": "",
-        "phone": "0987654321",
-        "location": {
-            "latitude": null,
-            "longitude": null
-        },
-        "trustScore": 0,
-        "createdAt": "2026-04-24T07:21:11.120Z",
-        "updatedAt": "2026-04-24T07:21:11.120Z"
-    },
-  "accessToken": "<JWT_ACCESS_TOKEN>",
-  "refreshToken": "<JWT_REFRESH_TOKEN>"
-}
-```
+### Notification
+| Field | Type | Notes |
+|---|---|---|
+| userId | ObjectId | ref User |
+| title | String | |
+| message | String | |
+| type | String | `order`, `payment`, `chat`, `review`, `system` |
+| relatedId | ObjectId | linked entity |
+| isRead | Boolean | default false |
+| link | String | frontend route |
 
 ---
 
-### 2. Login User
+## Key Design Decisions
 
-**Request**
+**Escrow payments** — funds are never sent directly to the seller. They are held until the buyer explicitly confirms delivery, protecting both parties.
 
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
+**Trust score** — automatically recalculated as a 0–100 score from the average of all received reviews. Visible on every listing and seller profile.
 
-{
-  "email": "john@example.com",
-  "password": "securePassword123"
-}
-```
+**Kafka for emails** — email sending is decoupled from the request lifecycle. The API publishes an event to Kafka and returns immediately; the consumer processes and sends the email asynchronously. This prevents slow email providers from blocking API responses.
 
-**Response**
+**Email verification gate** — users must verify their email before they can initiate any payment, reducing fraud from throwaway accounts.
 
-```json
-{
-  "message": "logged in successfully",
-  "accessToken": "<ACCESS_TOKEN>",
-  "refreshToken": "<REFRESH_TOKEN>"
-}
-```
+**Role flexibility** — users can switch between `buyer` and `seller` roles from their profile. Only admins can assign the `admin` role.
 
----
-
-### 3. Refresh Access Token
-
-**Request**
-
-```http
-POST /api/v1/auth/refresh
-Authorization: Bearer <refreshToken>
-```
-
-**Response**
-
-```json
-{
-  "accessToken": "<NEW_ACCESS_TOKEN>"
-}
-```
-
----
-
-### 4. Get Profile
-
-**Request**
-
-```http
-GET /api/v1/auth/profile
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "data": {
-    "_id": "64fbe97a2c5b2f0012345678",
-    "fullName": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "createdAt": "2026-04-14T10:00:00.000Z",
-    "updatedAt": "2026-04-14T10:00:00.000Z"
-  }
-}
-```
-
----
-
-### 5. Update Profile
-
-**Request**
-
-```http
-PUT /api/v1/auth/profile
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "fullName": "John Updated"
-  "role": "seller",
-  "password":"12345678",
-}
-```
-
-**Response**
-
-```json
-{
-  "data": {
-    "_id": "64fbe97a2c5b2f0012345678",
-    "fullName": "John Updated",
-    "email": "john@example.com",
-    "role": "seller",
-    "createdAt": "2026-04-14T10:00:00.000Z",
-    "updatedAt": "2026-04-14T10:10:00.000Z"
-  }
-}
-```
-
-> Note: current code uses `GET /auth/profile` and `PUT /auth/profile` but update logic is not fully implemented yet.
-
----
-
-### 6. Logout
-
-**Request**
-
-```http
-POST /api/v1/auth/logout
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "logged out successfully"
-}
-```
-
----
-
-### 7. Send Chat Message
-
-**Request**
-
-```http
-POST /api/v1/chat
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "receiverId": "69dfd16779e0181efcf018c5",
-  "message": "Hello, how are you?"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Message sent successfully",
-  "data": {
-    "_id": "69dfd22a79e0181efcf018c7",
-    "senderId": "69dfd18979e0181efcf018c6",
-    "receiverId": "69dfd16779e0181efcf018c5",
-    "message": "Hello, how are you?",
-    "status": "sent",
-    "createdAt": "2026-04-15T12:00:00.000Z",
-    "updatedAt": "2026-04-15T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 8. Get My Chats
-
-**Request**
-
-```http
-GET /api/v1/chat
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "data": [
-    {
-      "_id": "69dfd22a79e0181efcf018c7",
-      "senderId": {
-        "_id": "69dfd18979e0181efcf018c6",
-        "fullName": "John Doe",
-        "email": "john@example.com"
-      },
-      "receiverId": {
-        "_id": "69dfd16779e0181efcf018c5",
-        "fullName": "Jane Doe",
-        "email": "jane@example.com"
-      },
-      "message": "Hello, how are you?",
-      "status": "sent",
-      "createdAt": "2026-04-15T12:00:00.000Z"
-    }
-  ],
-  "page": 1,
-  "limit": 20
-}
-```
-
----
-
-### 9. Get Conversation
-
-**Request**
-
-```http
-GET /api/v1/chat/conversation/69dfd16779e0181efcf018c5
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "data": [
-    {
-      "_id": "69dfd22a79e0181efcf018c7",
-      "senderId": {
-        "_id": "69dfd18979e0181efcf018c6",
-        "fullName": "John Doe"
-      },
-      "receiverId": {
-        "_id": "69dfd16779e0181efcf018c5",
-        "fullName": "Jane Doe"
-      },
-      "message": "Hello, how are you?",
-      "status": "sent",
-      "createdAt": "2026-04-15T12:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
-### 10. Get Single Chat Message
-
-**Request**
-
-```http
-GET /api/v1/chat/69dfd22a79e0181efcf018c7
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "data": {
-    "_id": "69dfd22a79e0181efcf018c7",
-    "senderId": {
-      "_id": "69dfd18979e0181efcf018c6",
-      "fullName": "John Doe"
-    },
-    "receiverId": {
-      "_id": "69dfd16779e0181efcf018c5",
-      "fullName": "Jane Doe"
-    },
-    "message": "Hello, how are you?",
-    "status": "sent",
-    "createdAt": "2026-04-15T12:00:00.000Z"
-  }
-}
-```
-
----
-
-### 11. Update Chat Message
-
-**Request**
-
-```http
-PUT /api/v1/chat/69dfd22a79e0181efcf018c7
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "message": "I am fine, thanks!"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Message updated successfully",
-  "data": {
-    "_id": "69dfd22a79e0181efcf018c7",
-    "senderId": "69dfd18979e0181efcf018c6",
-    "receiverId": "69dfd16779e0181efcf018c5",
-    "message": "I am fine, thanks!",
-    "status": "sent",
-    "createdAt": "2026-04-15T12:00:00.000Z",
-    "updatedAt": "2026-04-15T12:05:00.000Z"
-  }
-}
-```
-
----
-
-### 12. Mark Chat Read
-
-**Request**
-
-```http
-PUT /api/v1/chat/69dfd22a79e0181efcf018c7/read
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "Message marked as read",
-  "data": {
-    "_id": "69dfd22a79e0181efcf018c7",
-    "status": "seen"
-  }
-}
-```
-
----
-
-### 13. Delete Chat Message
-
-**Request**
-
-```http
-DELETE /api/v1/chat/69dfd22a79e0181efcf018c7
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "Message deleted successfully"
-}
-```
-
-### 14. Initiate Payment (Buyer)
-
-**Request**
-
-```http
-POST /api/v1/buyer/payments/initiate
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "orderId": "order_id",
-  "amount": 100,
-  "method": "card"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Payment initiated",
-  "data": {
-    "_id": "payment_id",
-    "orderId": "order_id",
-    "buyerId": "buyer_id",
-    "sellerId": "seller_id",
-    "amount": 100,
-    "currency": "ETB",
-    "status": "held",
-    "method": "card",
-    "escrow": true,
-    "transactionRef": "TXN-ABC123DEF456",
-    "reference": "TXN-ABC123DEF456",
-    "createdAt": "2026-04-18T10:00:00.000Z",
-    "updatedAt": "2026-04-18T10:00:00.000Z"
-  }
-}
-```
-
----
-
-### 15. Confirm Payment
-
-**Request**
-
-```http
-POST /api/v1/payments/confirm
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "paymentId": "payment_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Payment confirmed",
-  "data": {
-    "_id": "payment_id",
-    "status": "held"
-  }
-}
-```
-
----
-
-### 16. Release Payment (to Seller)
-
-**Request**
-
-```http
-POST /api/v1/payments/release
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "paymentId": "payment_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Funds released to seller",
-  "data": {
-    "_id": "payment_id",
-    "status": "released"
-  }
-}
-```
-
----
-
-### 17. Refund Payment
-
-**Request**
-
-```http
-POST /api/v1/payments/refund
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "paymentId": "payment_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Payment refunded",
-  "data": {
-    "_id": "payment_id",
-    "status": "refunded"
-  }
-}
-```
-
----
-
-### 18. Get Payment History
-
-**Request**
-
-```http
-GET /api/v1/payments
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "payment_id",
-      "orderId": "order_id",
-      "buyerId": "buyer_id",
-      "sellerId": "seller_id",
-      "amount": 100,
-      "currency": "ETB",
-      "status": "held",
-      "method": "card",
-      "escrow": true,
-      "transactionRef": "TXN-ABC123DEF456",
-      "createdAt": "2026-04-18T10:00:00.000Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 1,
-    "pages": 1
-  }
-}
-```
-
----
-
-### 19. Get Payment By ID
-
-**Request**
-
-```http
-GET /api/v1/payments/payment_id
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "payment_id",
-    "orderId": "order_id",
-    "buyerId": "buyer_id",
-    "sellerId": "seller_id",
-    "amount": 100,
-    "currency": "ETB",
-    "status": "held",
-    "method": "card",
-    "escrow": true,
-    "transactionRef": "TXN-ABC123DEF456",
-    "reference": "TXN-ABC123DEF456",
-    "createdAt": "2026-04-18T10:00:00.000Z",
-    "updatedAt": "2026-04-18T10:00:00.000Z"
-  }
-}
-```
-
-### 20. Create Listing (Seller)
-
-**Request**
-
-```http
-POST /api/v1/seller/listings
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "title": "Item title",
-  "description": "Item description",
-  "price": 100,
-  "category": "electronics",
-  "images": ["url1", "url2"],
-  "location": { "latitude": 9.03, "longitude": 38.74, "address": "Addis Ababa" }
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "title": "Item title",
-  "description": "Item description",
-  "price": 100,
-  "category": "electronics",
-  "images": ["url1", "url2"],
-  "location": {
-    "latitude": 9.03,
-    "longitude": 38.74,
-    "address": "Addis Ababa"
-  },
-  "sellerId": "user_id",
-  "status": "pending",
-  "createdAt": "2026-04-19T10:00:00.000Z",
-  "updatedAt": "2026-04-19T10:00:00.000Z"
-}
-```
-
-### 19. Update Listing (Seller)
-
-**Request**
-
-```http
-PUT /api/v1/seller/listings/<listing_id>
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "price": 120
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  ...updated fields...
-}
-```
-
-### 20. Delete Listing (Seller)
-
-**Request**
-
-```http
-DELETE /api/v1/seller/listings/<listing_id>
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "Deleted"
-}
-```
-
-### 21. Approve Listing (Admin)
-
-**Request**
-
-```http
-POST /api/v1/admin/listings/approve
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "listingId": "listing_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "status": "active"
-}
-```
-
-### 22. Create Order (Buyer)
-
-**Request**
-
-```http
-POST /api/v1/buyer/orders/create
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "listingId": "listing_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Order created successfully",
-  "data": {
-    "_id": "order_id",
-    "listingId": "listing_id",
-    "buyerId": "user_id",
-    "sellerId": "seller_id",
-    "price": 100,
-    "status": "pending",
-    "createdAt": "2026-04-19T10:00:00.000Z",
-    "updatedAt": "2026-04-19T10:00:00.000Z"
-  }
-}
-```
-
-### 23. Get Seller Orders
-
-**Request**
-
-```http
-GET /api/v1/seller/orders
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-[
-  {
-    "_id": "order_id",
-    "listingId": "listing_id",
-    "buyerId": "user_id",
-    "sellerId": "seller_id",
-    "price": 100,
-    "status": "pending",
-    "createdAt": "2026-04-19T10:00:00.000Z"
-  }
-]
-```
-
-### 24. Get Active Listings (Buyer)
-
-**Request**
-
-```http
-GET /api/v1/buyer/listings
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-[
-  {
-    "_id": "listing_id",
-    "title": "Item title",
-    "description": "Item description",
-    "price": 100,
-    "currency": "ETB",
-    "images": [],
-    "category": "electronics",
-    "status": "active",
-    "location": {
-      "latitude": 9.03,
-      "longitude": 38.74,
-      "address": "Addis Ababa"
-    },
-    "sellerId": "seller_id",
-    "views": 0,
-    "likes": 0,
-    "createdAt": "2026-04-19T10:00:00.000Z"
-  }
-]
-```
-
-### 25. Create Listing (Seller)
-
-**Request**
-
-```http
-POST /api/v1/seller/listings
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "title": "Item title",
-  "description": "Item description",
-  "price": 100,
-  "category": "electronics",
-  "images": ["url1", "url2"],
-  "location": { "latitude": 9.03, "longitude": 38.74, "address": "Addis Ababa" }
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "title": "Item title",
-  "description": "Item description",
-  "price": 100,
-  "currency": "ETB",
-  "images": ["url1", "url2"],
-  "category": "electronics",
-  "location": {
-    "latitude": 9.03,
-    "longitude": 38.74,
-    "address": "Addis Ababa"
-  },
-  "sellerId": "user_id",
-  "status": "pending",
-  "isBoosted": false,
-  "views": 0,
-  "likes": 0,
-  "createdAt": "2026-04-19T10:00:00.000Z",
-  "updatedAt": "2026-04-19T10:00:00.000Z"
-}
-```
-
-### 26. Update Listing (Seller)
-
-**Request**
-
-```http
-PUT /api/v1/seller/listings/listing_id
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "price": 120
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "title": "Item title",
-  "description": "Item description",
-  "price": 120,
-  "currency": "ETB",
-  "images": ["url1", "url2"],
-  "category": "electronics",
-  "status": "pending",
-  "updatedAt": "2026-04-19T10:05:00.000Z"
-}
-```
-
-### 27. Delete Listing (Seller)
-
-**Request**
-
-```http
-DELETE /api/v1/seller/listings/listing_id
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "Deleted"
-}
-```
-
-### 28. Mark Listing as Sold (Seller)
-
-**Request**
-
-```http
-PATCH /api/v1/seller/listings/listing_id/sold
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "status": "sold"
-}
-```
-
-### 29. Get All Listings (Admin)
-
-**Request**
-
-```http
-GET /api/v1/admin/listings
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-[
-  {
-    "_id": "listing_id",
-    "title": "Item title",
-    "description": "Item description",
-    "price": 100,
-    "status": "pending",
-    "sellerId": "seller_id",
-    "createdAt": "2026-04-19T10:00:00.000Z"
-  }
-]
-```
-
-### 30. Approve Listing (Admin)
-
-**Request**
-
-```http
-POST /api/v1/admin/listings/approve
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "listingId": "listing_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "status": "active"
-}
-```
-
-### 31. Reject Listing (Admin)
-
-**Request**
-
-```http
-POST /api/v1/admin/listings/reject
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "listingId": "listing_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "listing_id",
-  "status": "rejected"
-}
-```
-
-### 32. Get Dashboard
-
-**Request**
-
-```http
-GET /api/v1/dashboard
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "totalListings": 5,
-  "totalOrders": 10,
-  "totalSales": 500,
-  "trustScore": 95
-}
-```
-
-### 33. Get Notifications
-
-**Request**
-
-```http
-GET /api/v1/notifications
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "data": [
-    {
-      "_id": "notification_id",
-      "userId": "user_id",
-      "title": "New Order",
-      "message": "A new order was created for Item title",
-      "type": "order",
-      "relatedId": "order_id",
-      "isRead": false,
-      "createdAt": "2026-04-19T10:00:00.000Z",
-      "updatedAt": "2026-04-19T10:00:00.000Z"
-    }
-  ]
-}
-```
-
-### 34. Get Unread Notification Count
-
-**Request**
-
-```http
-GET /api/v1/notifications/unread-count
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "unread": 1
-}
-```
-
-### 35. Mark Notification as Read
-
-**Request**
-
-```http
-POST /api/v1/notifications/read
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "notificationId": "notification_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "message": "Marked as read",
-  "data": {
-    "_id": "notification_id",
-    "userId": "user_id",
-    "title": "New Order",
-    "message": "A new order was created for Item title",
-    "type": "order",
-    "relatedId": "order_id",
-    "isRead": true,
-    "createdAt": "2026-04-19T10:00:00.000Z",
-    "updatedAt": "2026-04-19T10:05:00.000Z"
-  }
-}
-```
-
-### 36. Mark All Notifications as Read
-
-**Request**
-
-```http
-POST /api/v1/notifications/read-all
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "All notifications marked as read"
-}
-```
-
-### 37. Delete Notification
-
-**Request**
-
-```http
-DELETE /api/v1/notifications/notification_id
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-{
-  "message": "Notification deleted"
-}
-```
-
-### 38. Get All Users (Admin)
-
-**Request**
-
-```http
-GET /api/v1/admin/users
-Authorization: Bearer <accessToken>
-```
-
-**Response**
-
-```json
-[
-  {
-    "_id": "user_id",
-    "fullName": "John Doe",
-    "email": "john@example.com",
-    "role": "buyer",
-    "isActive": true,
-    "trustScore": 0,
-    "createdAt": "2026-04-14T10:00:00.000Z"
-  }
-]
-```
-
-### 39. Ban User (Admin)
-
-**Request**
-
-```http
-POST /api/v1/admin/users/ban
-Authorization: Bearer <accessToken>
-Content-Type: application/json
-
-{
-  "userId": "user_id"
-}
-```
-
-**Response**
-
-```json
-{
-  "_id": "user_id",
-  "isActive": false
-}
-```
-
----
-
----
-
-## 📊 Data Models
-
-### User Model
-
-- `_id`
-- `fullName`
-- `email`
-- `password` (hashed)
-- `role` (`buyer`, `seller`, `admin`)
-- `isVerified` (boolean)
-- `isActive` (boolean)
-- `avatar` (string)
-- `phone` (string)
-- `location` (object: latitude, longitude)
-- `trustScore` (number)
-- `balance` (number)
-- `createdAt`
-- `updatedAt`
-
-### Chat Model
-
-- `_id`
-- `senderId` (reference to User)
-- `receiverId` (reference to User)
-- `message` (string)
-- `audioUrl` (string)
-- `videoUrl` (string)
-- `imageUrl` (string)
-- `status` (`sent`, `delivered`, `seen`)
-- `createdAt`
-- `updatedAt`
-
-### Listing Model
-
-- `_id`
-- `title`
-- `description`
-- `price`
-- `currency` (default: "ETB")
-- `images` (array of strings)
-- `category`
-- `sellerId` (reference to User)
-- `location` (object: latitude, longitude, address)
-- `status` (`active`, `sold`, `pending`, `rejected`)
-- `isBoosted` (boolean)
-- `views` (number)
-- `likes` (number)
-- `createdAt`
-- `updatedAt`
-
-### Order Model
-
-- `_id`
-- `listingId` (reference to Listing)
-- `buyerId` (reference to User)
-- `sellerId` (reference to User)
-- `price`
-- `status` (`pending`, `paid`, `shipped`, `completed`, `cancelled`)
-- `paymentId` (reference to Payment)
-- `createdAt`
-- `updatedAt`
-
-### Entry Model (Wallet/Transaction)
-
-- `_id`
-- `userId` (reference to User)
-- `paymentId` (reference to Payment)
-- `amount`
-- `type` (`debit`, `credit`)
-- `description`
-- `balanceBefore`
-- `balanceAfter`
-- `createdAt`
-- `updatedAt`
-
-### Payment Model
-
-- `_id`
-- `orderId` (reference to Order)
-- `buyerId` (reference to User)
-- `sellerId` (reference to User)
-- `amount`
-- `currency` (default: "ETB")
-- `status` (`pending`, `held`, `released`, `refunded`)
-- `method` (`wallet`, `card`, `bank`)
-- `escrow` (boolean)
-- `transactionRef`
-- `reference`
-- `createdAt`
-- `updatedAt`
-
-### Refresh Token Model
-
-- `_id`
-- `userId` (reference to User)
-- `token`
-- `expiresAt`
-- `createdAt`
-
-### Notification Model
-
-- `_id`
-- `userId` (reference to User)
-- `title`
-- `message`
-- `type` (`order`, `chat`, `system`, `payment`)
-- `relatedId`
-- `isRead` (boolean)
-- `createdAt`
-- `updatedAt`
-
----
+**Location-aware listings** — every listing stores GPS coordinates. The frontend renders them on an interactive Leaflet map, making it easy to find nearby sellers.

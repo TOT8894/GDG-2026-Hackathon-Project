@@ -37,7 +37,7 @@ const paymentSchema = new mongoose.Schema(
     method: {
       type: String,
       required: true,
-      enum: ["wallet", "card", "bank"],
+      enum: ["telebirr", "cbebirr", "amole", "awash", "cod", "wallet", "card", "bank"],
     },
     escrow: {
       type: Boolean,
@@ -52,6 +52,15 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    flagReason: {
+      type: String,
+      default: null,
     },
   },
   {

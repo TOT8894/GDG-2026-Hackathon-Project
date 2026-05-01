@@ -19,7 +19,7 @@ const baseUserSchema = {
   }),
   role: roleSchema.default("buyer"),
   phone: Joi.string().trim().allow(""),
-  avatar: Joi.string().trim().uri().allow(""),
+  avatar: Joi.string().trim().allow(""),  // Allow both URLs and base64
   location: Joi.object({
     latitude: Joi.number(),
     longitude: Joi.number(),

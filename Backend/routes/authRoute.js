@@ -6,7 +6,12 @@ import {
   getMe,
   updateProfile,
   AccessRefreshToken,
- 
+  changePassword,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  resendVerificationEmail,
+  uploadAvatar,
 } from "../controller/authController.js";
 import { authenticateAccessToken } from "../middleware/authentication.js";
 
@@ -17,8 +22,12 @@ authRoutes.post("/register", signup);
 authRoutes.post("/logout", authenticateAccessToken, logOut);
 authRoutes.post("/refresh", AccessRefreshToken);
 authRoutes.get("/profile", authenticateAccessToken, getMe);
-authRoutes.patch("/profile", authenticateAccessToken, updateProfile);
-authRoutes.put("/profile", authenticateAccessToken, updateProfile);
 authRoutes.put("/updateProfile", authenticateAccessToken, updateProfile);
+authRoutes.put("/changePassword", authenticateAccessToken, changePassword);
+authRoutes.post("/forgotPassword", forgotPassword);
+authRoutes.post("/resetPassword", resetPassword);
+authRoutes.get("/verify-email/:token", verifyEmail);
+authRoutes.post("/resend-verification", authenticateAccessToken, resendVerificationEmail);
+authRoutes.post("/upload-avatar", authenticateAccessToken, uploadAvatar);
 
 export default authRoutes;

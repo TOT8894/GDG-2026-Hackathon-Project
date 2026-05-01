@@ -1,13 +1,17 @@
 import express from "express";
-const sellerRoutes = express.Router();
 import seller from "../controller/sellerController.js";
-import authenticateAccessToken from "../middleware/authentication.js";
-import authorize from "../middleware/autherization.js";
+import { authenticateAccessToken } from "../middleware/authentication.js";
+import { authorization as authorize } from "../middleware/autherization.js";
 
-sellerRoutes.post("/listings", authenticateAccessToken,  authorize("seller"),seller.createListing);
-sellerRoutes.put("/listings/:id", authenticateAccessToken,authorize("seller"), seller.updateListing);
-sellerRoutes.delete("/listings/:id", authenticateAccessToken, authorize("seller"),seller.deleteListing);
-sellerRoutes.patch("/listings/:id/sold", authenticateAccessToken,authorize("seller"), seller.markAsSold);
-sellerRoutes.get("/orders", authenticateAccessToken, authorize("seller"),seller.getSellerOrders);
+const sellerRoutes = express.Router();
+sellerRoutes.use(authenticateAccessToken);
+
+// Allow seller or admin to manage listings
+sellerRoutes.get("/listings", authorize("seller", "admin"), seller.getMyListings);
+sellerRoutes.post("/listings", authorize("seller", "admin"), seller.createListing);
+sellerRoutes.put("/listings/:id", authorize("seller", "admin"), seller.updateListing);
+sellerRoutes.delete("/listings/:id", authorize("seller", "admin"), seller.deleteListing);
+sellerRoutes.patch("/listings/:id/sold", authorize("seller", "admin"), seller.markAsSold);
+sellerRoutes.get("/orders", authorize("seller", "admin"), seller.getSellerOrders);
 
 export default sellerRoutes;

@@ -28,17 +28,17 @@ export default function HomePage({ theme, setTheme }) {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  to="/shop"
+                  to="/marketplace"
                   className="inline-flex min-h-touch items-center justify-center gap-2 rounded-xl bg-ng-primary-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-ng-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ng-primary-500 focus-visible:ring-offset-2 active:scale-pressed dark:bg-ng-primary-500 dark:hover:bg-ng-primary-400 dark:focus-visible:ring-offset-gray-900"
                 >
-                  Shop now
+                  Browse Marketplace
                   <ArrowRight className="size-4" aria-hidden />
                 </Link>
                 <Link
-                  to="/checkout"
+                  to="/shop"
                   className="inline-flex min-h-touch items-center justify-center rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ng-primary-500 focus-visible:ring-offset-2 active:scale-pressed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-900"
                 >
-                  Go to checkout
+                  Shop now
                 </Link>
               </div>
             </div>

@@ -1,16 +1,39 @@
 import express from "express";
-const adminRoutes = express.Router();
 import admin from "../controller/adminController.js";
-import authenticateAccessToken from "../middleware/authentication.js";
-import authorize from "../middleware/autherization.js";
+import { authenticateAccessToken } from "../middleware/authentication.js";
+import { authorization as authorize } from "../middleware/autherization.js";
 
-adminRoutes.get("/users", authenticateAccessToken, authorize("admin"), admin.getUsers);
-adminRoutes.post("/users/ban", authenticateAccessToken, authorize("admin"), admin.banUser);
+const adminRoutes = express.Router();
+adminRoutes.use(authenticateAccessToken, authorize("admin"));
 
-adminRoutes.get("/listings", authenticateAccessToken, authorize("admin"), admin.getListings);
-adminRoutes.post("/listings/approve", authenticateAccessToken, authorize("admin"), admin.approveListing);
-adminRoutes.post("/listings/reject", authenticateAccessToken, authorize("admin"), admin.rejectListing);
+// Dashboard
+adminRoutes.get("/stats", admin.getStats);
+adminRoutes.get("/fraud-alerts", admin.getFraudAlerts);
 
-adminRoutes.get("/reports", authenticateAccessToken, authorize("admin"), admin.getReports);
+// Users
+adminRoutes.get("/users", admin.getUsers);
+adminRoutes.get("/users/:id", admin.getUserDetail);
+adminRoutes.post("/users/ban", admin.banUser);
+adminRoutes.post("/users/unban", admin.unbanUser);
+adminRoutes.post("/users/promote", admin.promoteToAdmin);
+adminRoutes.post("/users/role", admin.changeUserRole);
+adminRoutes.post("/users/create-admin", admin.createAdmin);
+
+// Listings
+adminRoutes.get("/listings", admin.getListings);
+adminRoutes.post("/listings/approve", admin.approveListing);
+adminRoutes.post("/listings/reject", admin.rejectListing);
+adminRoutes.post("/listings/delete", admin.deleteListing);
+
+// Orders
+adminRoutes.get("/orders", admin.getOrders);
+adminRoutes.post("/orders/force-status", admin.forceOrderStatus);
+
+// Payments / Transactions
+adminRoutes.get("/payments", admin.getPayments);
+adminRoutes.post("/payments/release", admin.releasePayment);
+adminRoutes.post("/payments/refund", admin.refundPayment);
+adminRoutes.post("/payments/flag", admin.flagPayment);
+adminRoutes.post("/payments/unflag", admin.unflagPayment);
 
 export default adminRoutes;

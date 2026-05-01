@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import Listing from "../models/listingModel.js";
-import Notification from "../models/notificationModel.js";
 import Order from "../models/orderModel.js";
 import Payment from "../models/paymentModel.js";
+import { notify } from "../utils/notify.js";
 
 const VALID_STATUSES = ["pending", "paid", "shipped", "completed", "cancelled"];
 
@@ -94,11 +94,12 @@ export const createOrder = async (req, res) => {
       status: "pending",
     });
 
-    await Notification.create({
+    await notify({
       userId: listing.sellerId,
       title: "New Order",
-      message: `A new order was created for ${listing.title}`,
+      message: `New order for "${listing.title}"`,
       type: "order",
+      link: `/orders/${order._id}`,
       relatedId: order._id,
     });
 
@@ -231,11 +232,12 @@ export const updateOrderStatus = async (req, res) => {
     const notifyUserId =
       String(req.user._id) === String(order.buyerId) ? order.sellerId : order.buyerId;
 
-    await Notification.create({
+    await notify({
       userId: notifyUserId,
       title: "Order Status Updated",
       message: `Order status changed to ${status}`,
       type: "order",
+      link: `/orders/${order._id}`,
       relatedId: order._id,
     });
 
