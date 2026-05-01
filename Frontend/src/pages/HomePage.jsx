@@ -23,8 +23,8 @@ export default function HomePage({ theme, setTheme }) {
                 Everyday goods, calm checkout
               </h1>
               <p className="max-w-xl text-base text-gray-600 dark:text-gray-400">
-                Browse minimal home and lifestyle picks. Pay with Telebirr, CBE Birr,
-                Amole, Awash Birr, or cash on delivery — all in ETB.
+                Browse minimal home and lifestyle picks. Pay with Telebirr, CBE
+                Birr, Amole, Awash Birr, or cash on delivery — all in ETB.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -49,9 +49,10 @@ export default function HomePage({ theme, setTheme }) {
                     key={p.id}
                     className="rounded-xl border border-white/60 bg-white/70 p-3 shadow-sm backdrop-blur-sm dark:border-gray-600/60 dark:bg-gray-800/70"
                   >
-                    <div
-                      className={`mb-3 aspect-square w-full rounded-lg ${p.swatchClass} ring-1 ring-black/5 dark:ring-white/10`}
-                      aria-hidden
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="mb-3 aspect-square w-full rounded-lg object-cover ring-1 ring-black/5 dark:ring-white/10"
                     />
                     <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                       {p.name}
